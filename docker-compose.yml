@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    container_name: food-checker-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./food_checker.db:/app/food_checker.db
+    environment:
+      - DATABASE_URL=sqlite:///./food_checker.db
