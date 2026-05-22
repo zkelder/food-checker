@@ -1,6 +1,15 @@
 """
 Pydantic schemas for API request and response validation.
+
+These models define the shape of data entering and leaving the API.
+FastAPI uses them for:
+- request validation
+- response validation
+- automatic API documentation
 """
+
+from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -55,3 +64,19 @@ class AnalyzeResponse(BaseModel):
     safe_for_user: bool
 
     match_count: int
+
+
+class ScanHistoryResponse(BaseModel):
+    """
+    Saved scan returned from scan history.
+    """
+
+    id: int
+
+    raw_text: str
+
+    selected_rules: list[str]
+
+    result: dict[str, Any]
+
+    created_at: datetime
