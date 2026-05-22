@@ -3,6 +3,7 @@ Main FastAPI application entrypoint.
 """
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.analyzer import analyze_ingredients
@@ -19,6 +20,13 @@ app = FastAPI(
     description="Ingredient analysis API for allergy and dietary filtering.",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 def health_check() -> dict:
