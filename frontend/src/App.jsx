@@ -8,10 +8,12 @@ function App() {
   const [selectedRules, setSelectedRules] = useState([]);
   const [ingredientText, setIngredientText] = useState("");
   const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchRules();
+    fetchHistory();
   }, []);
 
   async function fetchRules() {
@@ -21,6 +23,16 @@ function App() {
       setRules(data);
     } catch (error) {
       console.error("Failed to load rules:", error);
+    }
+  }
+
+  async function fetchHistory() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/history`);
+      const data = await response.json();
+      setHistory(data);
+    } catch (error) {
+      console.error("Failed to load history:", error);
     }
   }
 
@@ -50,6 +62,7 @@ function App() {
 
       const data = await response.json();
       setResult(data);
+      fetchHistory();
     } catch (error) {
       console.error("Analysis failed:", error);
     } finally {
@@ -131,6 +144,47 @@ function App() {
                 </div>
               </div>
             ))}
+          </section>
+
+          <section className="card">
+            <div className="card-header">
+              <h2>Recent Scans</h2>
+              <p>Your latest saved ingredient checks.</p>
+            </div>
+
+            {history.length === 0 ? (
+              <p>No scans yet.</p>
+            ) : (
+              <div className="matches">
+                {history.slice(0, 5).map((scan) => (
+                  <article key={scan.id} className="match-card">
+                    <div className="match-topline">
+                      <h3>{scan.result?.risk_level || "unknown"}</h3>
+                      <span
+                        className={`severity ${
+                          scan.result?.risk_level || "low"
+                        }`}
+                      >
+                        {scan.result?.match_count || 0} match
+                      </span>
+                    </div>
+
+                    <p>{scan.result?.summary}</p>
+
+                    <p>
+                      Text: <strong>{scan.raw_text.slice(0, 80)}</strong>
+                    </p>
+
+                    <p>
+                      Date:{" "}
+                      <strong>
+                        {new Date(scan.created_at).toLocaleString()}
+                      </strong>
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
