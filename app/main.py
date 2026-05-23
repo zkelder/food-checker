@@ -1,19 +1,21 @@
 """
 Main FastAPI application entrypoint.
 """
+
+import json
 import os
 import tempfile
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.analyzer import analyze_ingredients
 from app.database import Base, engine, get_db
 from app.models import Scan
+from app.ocr import extract_text_from_image, validate_image_upload
 from app.rules import INGREDIENT_RULES
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ScanHistoryResponse
-from app.ocr import extract_text_from_image, validate_image_upload
 
 Base.metadata.create_all(bind=engine)
 
@@ -76,19 +78,29 @@ def analyze(
 
     return result
 
+
 @app.post("/scan/image", response_model=AnalyzeResponse)
 def scan_image(
     file: UploadFile = File(...),
+    selected_rules: str = Form("[]"),
     db: Session = Depends(get_db),
 ) -> AnalyzeResponse:
     """
-    Accept an uploaded ingredient label image, extract text, analyze it,
-    and save the scan.
-
-    This endpoint is the future mobile camera/OCR path.
+    Accept an uploaded ingredient label image, extract text, analyze it
+    against selected rules, and save the scan.
     """
+    temp_path = None
+
     try:
         validate_image_upload(file)
+
+        try:
+            parsed_selected_rules = json.loads(selected_rules)
+        except json.JSONDecodeError:
+            parsed_selected_rules = []
+
+        if not isinstance(parsed_selected_rules, list):
+            parsed_selected_rules = []
 
         suffix = os.path.splitext(file.filename or "")[1] or ".jpg"
 
@@ -97,14 +109,15 @@ def scan_image(
             temp_path = temp_file.name
 
         extracted_text = extract_text_from_image(temp_path)
+
         result = analyze_ingredients(
             ingredient_text=extracted_text,
-            selected_rules=None,
+            selected_rules=parsed_selected_rules,
         )
 
         scan = Scan(
             raw_text=extracted_text,
-            selected_rules=[],
+            selected_rules=parsed_selected_rules,
             result=result,
         )
 
@@ -118,8 +131,9 @@ def scan_image(
         raise HTTPException(status_code=400, detail=str(error))
 
     finally:
-        if "temp_path" in locals() and os.path.exists(temp_path):
+        if temp_path and os.path.exists(temp_path):
             os.remove(temp_path)
+
 
 @app.get("/history", response_model=list[ScanHistoryResponse])
 def get_history(

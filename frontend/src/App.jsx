@@ -98,6 +98,7 @@ function App() {
     try {
       const formData = new FormData();
       formData.append("file", selectedImage);
+      formData.append("selected_rules", JSON.stringify(selectedRules));
 
       const response = await fetch(`${API_BASE_URL}/scan/image`, {
         method: "POST",
@@ -169,9 +170,7 @@ function App() {
             <div className="card-header">
               <h2>Select Rules</h2>
 
-              <p>
-                Choose allergies, restrictions, or ingredient concerns.
-              </p>
+              <p>Choose allergies, restrictions, or ingredient concerns.</p>
             </div>
 
             {Object.entries(groupedRules).map(([category, categoryRules]) => (
@@ -194,9 +193,7 @@ function App() {
                         onChange={() => toggleRule(rule.id)}
                       />
 
-                      <span>
-                        {rule.display_name || rule.label || rule.id}
-                      </span>
+                      <span>{rule.display_name || rule.label || rule.id}</span>
                     </label>
                   ))}
                 </div>
@@ -270,10 +267,7 @@ function App() {
               }
             />
 
-            <button
-              onClick={scanImage}
-              disabled={loading || !selectedImage}
-            >
+            <button onClick={scanImage} disabled={loading || !selectedImage}>
               {loading ? "Scanning..." : "Scan Image"}
             </button>
           </section>
