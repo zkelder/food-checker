@@ -19,6 +19,11 @@ function App() {
   async function fetchRules() {
     try {
       const response = await fetch(`${API_BASE_URL}/rules`);
+
+      if (!response.ok) {
+        throw new Error("Rules request failed");
+      }
+
       const data = await response.json();
       setRules(data);
     } catch (error) {
@@ -29,6 +34,11 @@ function App() {
   async function fetchHistory() {
     try {
       const response = await fetch(`${API_BASE_URL}/history`);
+
+      if (!response.ok) {
+        throw new Error("History request failed");
+      }
+
       const data = await response.json();
       setHistory(data);
     } catch (error) {
@@ -60,6 +70,10 @@ function App() {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error("Analyze request failed");
+      }
+
       const data = await response.json();
       setResult(data);
       fetchHistory();
@@ -85,7 +99,7 @@ function App() {
     });
   });
 
-  const isSafe = result?.match_count === 0;
+  const hasMatches = result?.match_count > 0;
 
   return (
     <main className="page">
@@ -95,7 +109,7 @@ function App() {
           <h1>Food Checker</h1>
           <p className="subtitle">
             Select what matters to you, paste an ingredient label, and get a
-            focused safety result.
+            focused ingredient review.
           </p>
         </div>
 
@@ -116,7 +130,7 @@ function App() {
           <section className="card">
             <div className="card-header">
               <h2>Select Rules</h2>
-              <p>Choose allergies or concerns to screen for.</p>
+              <p>Choose allergies, restrictions, or ingredient concerns.</p>
             </div>
 
             {Object.entries(groupedRules).map(([category, categoryRules]) => (
@@ -169,10 +183,14 @@ function App() {
                       </span>
                     </div>
 
-                    <p>{scan.result?.summary}</p>
+                    <p>{scan.result?.summary || "No summary available."}</p>
 
                     <p>
-                      Text: <strong>{scan.raw_text.slice(0, 80)}</strong>
+                      Text:{" "}
+                      <strong>
+                        {(scan.raw_text || "").slice(0, 80)}
+                        {(scan.raw_text || "").length > 80 ? "..." : ""}
+                      </strong>
                     </p>
 
                     <p>
@@ -216,13 +234,13 @@ function App() {
                 <p>{result.summary}</p>
               </div>
 
-              <div className={isSafe ? "status safe" : "status warning"}>
+              <div className={!hasMatches ? "status safe" : "status warning"}>
                 <strong>
-                  {isSafe
+                  {!hasMatches
                     ? "No flagged ingredients found"
-                    : `${result.match_count} warning(s) found`}
+                    : `${result.match_count} flagged ingredient(s) found`}
                 </strong>
-                <span>Risk level: {result.risk_level}</span>
+                <span>Review level: {result.risk_level}</span>
               </div>
 
               {result.matches.length > 0 && (
@@ -236,7 +254,7 @@ function App() {
                         </span>
                       </div>
 
-                      <p>{match.warning}</p>
+                      <p>{match.warning || "Ingredient matched this rule."}</p>
 
                       <p>
                         Matched ingredient:{" "}
