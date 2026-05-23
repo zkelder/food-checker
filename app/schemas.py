@@ -1,82 +1,64 @@
 """
-Pydantic schemas for API request and response validation.
+API request and response schemas.
 
-These models define the shape of data entering and leaving the API.
-FastAPI uses them for:
-- request validation
-- response validation
-- automatic API documentation
+These schemas define the structure of data exchanged
+between the frontend and backend.
 """
 
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class AnalyzeRequest(BaseModel):
     """
-    Request body for ingredient analysis.
+    Incoming ingredient analysis request from the frontend.
     """
 
-    text: str = Field(
-        ...,
-        min_length=1,
-        description="Raw ingredient text entered by the user.",
-    )
-
-    selected_rules: list[str] = Field(
-        ...,
-        min_length=1,
-        description="Rule IDs selected by the user.",
-    )
+    text: str
+    selected_rules: list[str] = []
 
 
 class MatchResponse(BaseModel):
     """
-    A detected ingredient match relevant to the user.
+    Single ingredient match returned by the analyzer.
     """
 
-    rule_id: str
-
-    display_name: str
-
+    ingredient: str
+    label: str
+    warning: str
+    severity: str
     category: str
-
-    default_severity: str
-
-    matched_ingredient: str
-
-    matched_keyword: str
 
 
 class AnalyzeResponse(BaseModel):
     """
-    Full ingredient analysis response.
+    Full analysis response returned to the frontend.
     """
 
-    ingredients: list[str]
-
-    selected_rules: list[str]
-
+    input_text: str
+    normalized_text: str
+    risk_level: str
+    summary: str
     matches: list[MatchResponse]
-
-    safe_for_user: bool
-
     match_count: int
 
 
 class ScanHistoryResponse(BaseModel):
     """
-    Saved scan returned from scan history.
+    Saved scan history entry returned from the database.
     """
 
     id: int
-
     raw_text: str
-
     selected_rules: list[str]
-
     result: dict[str, Any]
-
     created_at: datetime
+
+    class Config:
+        """
+        Allow Pydantic to read SQLAlchemy model objects directly.
+        """
+
+        from_attributes = True

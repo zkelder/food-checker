@@ -10,7 +10,7 @@ from app.analyzer import analyze_ingredients
 from app.database import Base, engine, get_db
 from app.models import Scan
 from app.rules import INGREDIENT_RULES
-from app.schemas import AnalyzeRequest, ScanHistoryResponse
+from app.schemas import AnalyzeRequest, AnalyzeResponse, ScanHistoryResponse
 
 Base.metadata.create_all(bind=engine)
 
@@ -48,7 +48,7 @@ def get_rules() -> dict:
     return INGREDIENT_RULES
 
 
-@app.post("/analyze")
+@app.post("/analyze", response_model=AnalyzeResponse)
 def analyze(
     request: AnalyzeRequest,
     db: Session = Depends(get_db),
