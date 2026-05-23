@@ -1,8 +1,8 @@
 """
-Core ingredient analysis logic.
+Ingredient analysis logic.
 
-The analyzer accepts raw ingredient text and a list of user-selected rules,
-then returns only the matches relevant to that user's allergies or preferences.
+Keep this module independent from FastAPI, database code, auth,
+OCR, barcode scanning, or frontend concerns.
 """
 
 import re
@@ -10,85 +10,116 @@ import re
 from app.rules import INGREDIENT_RULES
 
 
-def normalize_text(text: str) -> str:
-    """Normalize text for consistent matching."""
+SEVERITY_RANK = {
+    "none": 0,
+    "info": 1,
+    "low": 2,
+    "medium": 3,
+    "high": 4,
+}
+
+
+def normalize_text(text: str | None) -> str:
+    """
+    Normalize ingredient text for consistent matching.
+    """
+    if not text:
+        return ""
+
     text = text.lower().strip()
-    text = re.sub(r"[^\w\s,/-]", "", text)
     text = re.sub(r"\s+", " ", text)
 
     return text
 
 
-def parse_ingredients(text: str) -> list[str]:
-    """Parse raw ingredient text into a cleaned list."""
-    normalized_text = normalize_text(text)
-    raw_ingredients = normalized_text.split(",")
-
-    ingredients = []
-
-    for ingredient in raw_ingredients:
-        cleaned = ingredient.strip()
-
-        if cleaned:
-            ingredients.append(cleaned)
-
-    return ingredients
+def ingredient_matches_text(ingredient: str, text: str) -> bool:
+    """
+    Match ingredients as words/phrases, not random substrings.
+    """
+    pattern = r"\b" + re.escape(ingredient.lower()) + r"\b"
+    return re.search(pattern, text) is not None
 
 
-def normalize_selected_rules(selected_rules: list[str]) -> set[str]:
-    """Normalize selected rule IDs from user input."""
-    return {normalize_text(rule) for rule in selected_rules}
-
-
-def find_matches(
-    ingredients: list[str],
-    selected_rules: list[str],
-) -> list[dict]:
-    """Find matches only for rules selected by the user."""
-    normalized_selected_rules = normalize_selected_rules(selected_rules)
-
+def find_matching_rules(ingredient_text: str) -> list[dict]:
+    """
+    Find all ingredient rules that match the input text.
+    """
+    normalized_text = normalize_text(ingredient_text)
     matches = []
-    seen_matches = set()
 
-    for rule_id, rule_data in INGREDIENT_RULES.items():
-        if rule_id not in normalized_selected_rules:
-            continue
-
-        for ingredient in ingredients:
-            for keyword in rule_data["keywords"]:
-                normalized_keyword = normalize_text(keyword)
-
-                if normalized_keyword in ingredient:
-                    match_key = (rule_id, ingredient)
-
-                    if match_key in seen_matches:
-                        continue
-
-                    seen_matches.add(match_key)
-
-                    matches.append(
-                        {
-                            "rule_id": rule_id,
-                            "display_name": rule_data["display_name"],
-                            "category": rule_data["category"],
-                            "default_severity": rule_data["default_severity"],
-                            "matched_ingredient": ingredient,
-                            "matched_keyword": keyword,
-                        }
-                    )
+    for ingredient, rule in INGREDIENT_RULES.items():
+        if ingredient_matches_text(ingredient, normalized_text):
+            matches.append(
+                {
+                    "ingredient": ingredient,
+                    "label": rule.get("label", ingredient),
+                    "warning": rule.get("warning", ""),
+                    "severity": rule.get("severity", "info"),
+                    "category": rule.get("category", "general"),
+                }
+            )
 
     return matches
 
 
-def analyze_ingredients(text: str, selected_rules: list[str]) -> dict:
-    """Analyze ingredient text against selected user rules."""
-    ingredients = parse_ingredients(text)
-    matches = find_matches(ingredients, selected_rules)
+def determine_risk_level(matches: list[dict]) -> str:
+    """
+    Determine overall risk level based on highest severity found.
+    """
+    if not matches:
+        return "none"
+
+    highest_match = max(
+        matches,
+        key=lambda match: SEVERITY_RANK.get(match.get("severity", "info"), 1),
+    )
+
+    return highest_match.get("severity", "info")
+
+
+def build_summary(matches: list[dict], risk_level: str) -> str:
+    """
+    Create a simple user-facing summary.
+    """
+    if not matches:
+        return "No flagged ingredients found."
+
+    ingredient_names = [match["label"] for match in matches]
+
+    if risk_level == "high":
+        return f"High-risk ingredients found: {', '.join(ingredient_names)}."
+    if risk_level == "medium":
+        return f"Ingredients that may need attention: {', '.join(ingredient_names)}."
+    if risk_level == "low":
+        return f"Minor ingredient notes found: {', '.join(ingredient_names)}."
+
+    return f"Ingredient notes found: {', '.join(ingredient_names)}."
+
+
+def analyze_ingredients(ingredient_text: str | None) -> dict:
+    """
+    Analyze ingredient text and return structured results.
+    """
+    normalized_text = normalize_text(ingredient_text)
+
+    if not normalized_text:
+        return {
+            "input_text": ingredient_text or "",
+            "normalized_text": "",
+            "risk_level": "none",
+            "summary": "No ingredient text provided.",
+            "matches": [],
+            "match_count": 0,
+        }
+
+    matches = find_matching_rules(normalized_text)
+    risk_level = determine_risk_level(matches)
 
     return {
-        "ingredients": ingredients,
-        "selected_rules": selected_rules,
+        "input_text": ingredient_text,
+        "normalized_text": normalized_text,
+        "risk_level": risk_level,
+        "summary": build_summary(matches, risk_level),
         "matches": matches,
-        "safe_for_user": len(matches) == 0,
         "match_count": len(matches),
     }

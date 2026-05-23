@@ -22,11 +22,15 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/health")
 def health_check() -> dict:
@@ -50,12 +54,9 @@ def analyze(
     db: Session = Depends(get_db),
 ) -> dict:
     """
-    Analyze ingredient text using user-selected rules and save the scan.
+    Analyze ingredient text and save the scan.
     """
-    result = analyze_ingredients(
-        text=request.text,
-        selected_rules=request.selected_rules,
-    )
+    result = analyze_ingredients(request.text)
 
     scan = Scan(
         raw_text=request.text,
