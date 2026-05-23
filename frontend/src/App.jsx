@@ -60,7 +60,7 @@ function App() {
   const groupedRules = {};
 
   Object.entries(rules).forEach(([ruleId, ruleData]) => {
-    const category = ruleData.category;
+    const category = ruleData.category || "general";
 
     if (!groupedRules[category]) {
       groupedRules[category] = [];
@@ -71,6 +71,8 @@ function App() {
       ...ruleData,
     });
   });
+
+  const isSafe = result?.match_count === 0;
 
   return (
     <main className="page">
@@ -123,7 +125,7 @@ function App() {
                         checked={selectedRules.includes(rule.id)}
                         onChange={() => toggleRule(rule.id)}
                       />
-                      <span>{rule.display_name}</span>
+                      <span>{rule.display_name || rule.label || rule.id}</span>
                     </label>
                   ))}
                 </div>
@@ -147,7 +149,7 @@ function App() {
 
             <button
               onClick={analyzeIngredients}
-              disabled={loading || !ingredientText.trim() || selectedRules.length === 0}
+              disabled={loading || !ingredientText.trim()}
             >
               {loading ? "Analyzing..." : "Analyze Ingredients"}
             </button>
@@ -157,50 +159,43 @@ function App() {
             <section className="card results-card">
               <div className="card-header">
                 <h2>Results</h2>
-                <p>
-                  Screening against {result.selected_rules.length} selected
-                  rule(s).
-                </p>
+                <p>{result.summary}</p>
               </div>
 
-              <div
-                className={
-                  result.safe_for_user ? "status safe" : "status warning"
-                }
-              >
+              <div className={isSafe ? "status safe" : "status warning"}>
                 <strong>
-                  {result.safe_for_user
-                    ? "No selected concerns found"
+                  {isSafe
+                    ? "No flagged ingredients found"
                     : `${result.match_count} warning(s) found`}
                 </strong>
-                <span>
-                  {result.safe_for_user
-                    ? "This item did not match your selected rules."
-                    : "Review the matched ingredients below."}
-                </span>
+                <span>Risk level: {result.risk_level}</span>
               </div>
 
-              <div className="matches">
-                {result.matches.map((match, index) => (
-                  <article key={index} className="match-card">
-                    <div className="match-topline">
-                      <h3>{match.display_name}</h3>
-                      <span className={`severity ${match.default_severity}`}>
-                        {match.default_severity}
-                      </span>
-                    </div>
+              {result.matches.length > 0 && (
+                <div className="matches">
+                  {result.matches.map((match, index) => (
+                    <article key={index} className="match-card">
+                      <div className="match-topline">
+                        <h3>{match.label || match.ingredient}</h3>
+                        <span className={`severity ${match.severity}`}>
+                          {match.severity}
+                        </span>
+                      </div>
 
-                    <p>
-                      Matched ingredient:{" "}
-                      <strong>{match.matched_ingredient}</strong>
-                    </p>
+                      <p>{match.warning}</p>
 
-                    <p>
-                      Keyword: <strong>{match.matched_keyword}</strong>
-                    </p>
-                  </article>
-                ))}
-              </div>
+                      <p>
+                        Matched ingredient:{" "}
+                        <strong>{match.ingredient}</strong>
+                      </p>
+
+                      <p>
+                        Category: <strong>{match.category}</strong>
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           )}
         </div>
