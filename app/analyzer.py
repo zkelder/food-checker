@@ -1,8 +1,8 @@
 """
 Ingredient analysis logic.
 
-Keep this module independent from FastAPI, database code, auth,
-OCR, barcode scanning, or frontend concerns.
+This module keeps matching rules separate from FastAPI,
+database, OCR, barcode scanning, and frontend code.
 """
 
 import re
@@ -21,7 +21,7 @@ SEVERITY_RANK = {
 
 def normalize_text(text: str | None) -> str:
     """
-    Normalize ingredient text for consistent matching.
+    Normalize ingredient text before matching.
     """
     if not text:
         return ""
@@ -32,39 +32,70 @@ def normalize_text(text: str | None) -> str:
     return text
 
 
-def ingredient_matches_text(ingredient: str, text: str) -> bool:
+def keyword_matches_text(keyword: str, text: str) -> bool:
     """
-    Match ingredients as words/phrases, not random substrings.
+    Match a keyword as a word or phrase instead of a random substring.
     """
-    pattern = r"\b" + re.escape(ingredient.lower()) + r"\b"
+    pattern = r"\b" + re.escape(keyword.lower()) + r"\b"
     return re.search(pattern, text) is not None
 
 
-def find_matching_rules(ingredient_text: str) -> list[dict]:
+def get_rule_keywords(rule_id: str, rule: dict) -> list[str]:
     """
-    Find all ingredient rules that match the input text.
+    Return all searchable keywords for a rule.
+    """
+    keywords = rule.get("keywords", [])
+
+    if rule_id not in keywords:
+        keywords.append(rule_id)
+
+    return keywords
+
+
+def find_matching_rules(
+    ingredient_text: str,
+    selected_rules: list[str] | None = None,
+) -> list[dict]:
+    """
+    Find selected rules that match the ingredient text.
     """
     normalized_text = normalize_text(ingredient_text)
     matches = []
 
-    for ingredient, rule in INGREDIENT_RULES.items():
-        if ingredient_matches_text(ingredient, normalized_text):
-            matches.append(
-                {
-                    "ingredient": ingredient,
-                    "label": rule.get("label", ingredient),
-                    "warning": rule.get("warning", ""),
-                    "severity": rule.get("severity", "info"),
-                    "category": rule.get("category", "general"),
-                }
-            )
+    rules_to_check = INGREDIENT_RULES
+
+    if selected_rules:
+        rules_to_check = {
+            rule_id: rule
+            for rule_id, rule in INGREDIENT_RULES.items()
+            if rule_id in selected_rules
+        }
+
+    for rule_id, rule in rules_to_check.items():
+        keywords = get_rule_keywords(rule_id, rule)
+
+        for keyword in keywords:
+            if keyword_matches_text(keyword, normalized_text):
+                matches.append(
+                    {
+                        "ingredient": keyword,
+                        "label": rule.get("display_name", rule.get("label", rule_id)),
+                        "warning": rule.get("warning", ""),
+                        "severity": rule.get(
+                            "default_severity",
+                            rule.get("severity", "info"),
+                        ),
+                        "category": rule.get("category", "general"),
+                    }
+                )
+                break
 
     return matches
 
 
 def determine_risk_level(matches: list[dict]) -> str:
     """
-    Determine overall risk level based on highest severity found.
+    Determine overall risk level from the highest matching severity.
     """
     if not matches:
         return "none"
@@ -79,26 +110,29 @@ def determine_risk_level(matches: list[dict]) -> str:
 
 def build_summary(matches: list[dict], risk_level: str) -> str:
     """
-    Create a simple user-facing summary.
+    Create a short user-facing result summary.
     """
     if not matches:
         return "No flagged ingredients found."
 
-    ingredient_names = [match["label"] for match in matches]
+    labels = [match["label"] for match in matches]
 
     if risk_level == "high":
-        return f"High-risk ingredients found: {', '.join(ingredient_names)}."
+        return f"High-risk ingredients found: {', '.join(labels)}."
     if risk_level == "medium":
-        return f"Ingredients that may need attention: {', '.join(ingredient_names)}."
+        return f"Ingredients that may need attention: {', '.join(labels)}."
     if risk_level == "low":
-        return f"Minor ingredient notes found: {', '.join(ingredient_names)}."
+        return f"Minor ingredient notes found: {', '.join(labels)}."
 
-    return f"Ingredient notes found: {', '.join(ingredient_names)}."
+    return f"Ingredient notes found: {', '.join(labels)}."
 
 
-def analyze_ingredients(ingredient_text: str | None) -> dict:
+def analyze_ingredients(
+    ingredient_text: str | None,
+    selected_rules: list[str] | None = None,
+) -> dict:
     """
-    Analyze ingredient text and return structured results.
+    Analyze ingredient text against selected screening rules.
     """
     normalized_text = normalize_text(ingredient_text)
 
@@ -112,11 +146,11 @@ def analyze_ingredients(ingredient_text: str | None) -> dict:
             "match_count": 0,
         }
 
-    matches = find_matching_rules(normalized_text)
+    matches = find_matching_rules(normalized_text, selected_rules)
     risk_level = determine_risk_level(matches)
 
     return {
-        "input_text": ingredient_text,
+        "input_text": ingredient_text or "",
         "normalized_text": normalized_text,
         "risk_level": risk_level,
         "summary": build_summary(matches, risk_level),

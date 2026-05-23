@@ -43,7 +43,7 @@ def health_check() -> dict:
 @app.get("/rules")
 def get_rules() -> dict:
     """
-    Return all available ingredient rules.
+    Return all available ingredient screening rules.
     """
     return INGREDIENT_RULES
 
@@ -52,11 +52,14 @@ def get_rules() -> dict:
 def analyze(
     request: AnalyzeRequest,
     db: Session = Depends(get_db),
-) -> dict:
+) -> AnalyzeResponse:
     """
-    Analyze ingredient text and save the scan.
+    Analyze ingredient text against selected rules and save the scan.
     """
-    result = analyze_ingredients(request.text)
+    result = analyze_ingredients(
+        ingredient_text=request.text,
+        selected_rules=request.selected_rules,
+    )
 
     scan = Scan(
         raw_text=request.text,
@@ -76,7 +79,7 @@ def get_history(
     db: Session = Depends(get_db),
 ) -> list[ScanHistoryResponse]:
     """
-    Return previously saved scans.
+    Return previously saved scans, newest first.
     """
     scans = (
         db.query(Scan)
