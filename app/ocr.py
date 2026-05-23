@@ -2,14 +2,14 @@
 OCR service layer.
 
 Handles image validation, phone-photo preprocessing, OCR extraction,
-and cleanup of noisy OCR text.
+fallback OCR attempts, and cleanup of noisy OCR text.
 """
 
 import re
 
 import pytesseract
 from fastapi import UploadFile
-from PIL import Image, ImageOps
+from PIL import Image, ImageFilter, ImageOps
 
 
 ALLOWED_IMAGE_TYPES = {
@@ -17,6 +17,8 @@ ALLOWED_IMAGE_TYPES = {
     "image/png",
     "image/webp",
 }
+
+MIN_OCR_TEXT_LENGTH = 8
 
 
 def validate_image_upload(file: UploadFile) -> None:
@@ -31,8 +33,8 @@ def preprocess_image(file_path: str) -> Image.Image:
     """
     Prepare phone label photos for OCR.
 
-    Handles common mobile issues:
-    - rotated images
+    Handles:
+    - rotated phone images
     - small text
     - low contrast
     - mild blur
@@ -45,17 +47,22 @@ def preprocess_image(file_path: str) -> Image.Image:
 
     width, height = image.size
 
-    if width < 1600:
-        scale = 1600 / width
+    if width < 1800:
+        scale = 1800 / width
         new_size = (int(width * scale), int(height * scale))
         image = image.resize(new_size)
 
+    image = image.filter(ImageFilter.SHARPEN)
     image = ImageOps.autocontrast(image)
 
-    # Simple black/white threshold.
-    image = image.point(lambda pixel: 255 if pixel > 165 else 0)
-
     return image
+
+
+def threshold_image(image: Image.Image) -> Image.Image:
+    """
+    Create a high-contrast black-and-white copy for fallback OCR.
+    """
+    return image.point(lambda pixel: 255 if pixel > 165 else 0)
 
 
 def clean_ocr_text(text: str) -> str:
@@ -84,15 +91,40 @@ def clean_ocr_text(text: str) -> str:
     return text.strip()
 
 
-def extract_text_from_image(file_path: str) -> str:
+def run_tesseract(image: Image.Image, config: str) -> str:
     """
-    Extract cleaned text from an uploaded ingredient label image.
+    Run Tesseract with a specific config and return cleaned text.
     """
-    image = preprocess_image(file_path)
-
     raw_text = pytesseract.image_to_string(
         image,
-        config="--psm 6",
+        config=config,
+        timeout=20,
     )
 
     return clean_ocr_text(raw_text)
+
+
+def extract_text_from_image(file_path: str) -> str:
+    """
+    Extract cleaned text from an uploaded ingredient label image.
+
+    Tries multiple OCR strategies because phone label photos can vary widely.
+    """
+    image = preprocess_image(file_path)
+    thresholded = threshold_image(image)
+
+    attempts = [
+        run_tesseract(image, "--psm 6"),
+        run_tesseract(thresholded, "--psm 6"),
+        run_tesseract(image, "--psm 11"),
+        run_tesseract(thresholded, "--psm 11"),
+    ]
+
+    best_text = max(attempts, key=len)
+
+    if len(best_text) < MIN_OCR_TEXT_LENGTH:
+        raise ValueError(
+            "Could not read enough text from the image. Try a clearer, closer photo."
+        )
+
+    return best_text
