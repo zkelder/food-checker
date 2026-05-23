@@ -500,3 +500,87 @@ button:disabled {
     align-self: flex-start;
   }
 }
+
+.error-card {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(127, 29, 29, 0.35);
+}
+
+.error-card strong {
+  color: #fecaca;
+}
+
+.error-card p {
+  margin-bottom: 0;
+  color: #fee2e2;
+}
+
+.upload-box {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px dashed rgba(251, 146, 60, 0.55);
+  border-radius: 18px;
+  background: rgba(251, 146, 60, 0.08);
+  cursor: pointer;
+}
+
+.upload-box input {
+  width: 100%;
+}
+
+.upload-title {
+  color: white;
+  font-weight: 900;
+}
+
+.upload-help,
+.helper-note {
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.helper-note {
+  margin: 14px 0 0;
+}
+
+.ocr-preview {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ocr-preview summary {
+  color: #fdba74;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.ocr-preview p {
+  max-height: 180px;
+  overflow: auto;
+  color: #d1d5db;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .primary-flow {
+    order: 1;
+  }
+
+  .secondary-flow {
+    order: 2;
+  }
+
+  .scan-card {
+    border-color: rgba(251, 146, 60, 0.3);
+  }
+}

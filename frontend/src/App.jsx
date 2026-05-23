@@ -12,6 +12,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     fetchRules();
@@ -23,13 +24,14 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/rules`);
 
       if (!response.ok) {
-        throw new Error("Rules request failed");
+        throw new Error("Could not load preferences.");
       }
 
       const data = await response.json();
       setRules(data);
     } catch (error) {
       console.error("Failed to load rules:", error);
+      setErrorMessage("Could not load ingredient preferences.");
     }
   }
 
@@ -38,7 +40,7 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/history`);
 
       if (!response.ok) {
-        throw new Error("History request failed");
+        throw new Error("Could not load history.");
       }
 
       const data = await response.json();
@@ -56,9 +58,15 @@ function App() {
     );
   }
 
+  function handleImageChange(event) {
+    setSelectedImage(event.target.files?.[0] || null);
+    setErrorMessage("");
+  }
+
   async function analyzeIngredients() {
     setLoading(true);
     setResult(null);
+    setErrorMessage("");
 
     try {
       const response = await fetch(`${API_BASE_URL}/analyze`, {
@@ -73,7 +81,7 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error("Analyze request failed");
+        throw new Error("Analyze request failed.");
       }
 
       const data = await response.json();
@@ -82,6 +90,7 @@ function App() {
       fetchHistory();
     } catch (error) {
       console.error("Analysis failed:", error);
+      setErrorMessage("Could not analyze ingredients. Check that the backend is running.");
     } finally {
       setLoading(false);
     }
@@ -94,6 +103,7 @@ function App() {
 
     setLoading(true);
     setResult(null);
+    setErrorMessage("");
 
     try {
       const formData = new FormData();
@@ -106,7 +116,8 @@ function App() {
       });
 
       if (!response.ok) {
-        throw new Error("OCR scan failed");
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || "OCR scan failed.");
       }
 
       const data = await response.json();
@@ -115,6 +126,10 @@ function App() {
       fetchHistory();
     } catch (error) {
       console.error("OCR scan failed:", error);
+      setErrorMessage(
+        error.message ||
+          "Could not read that image. Try a clearer, closer label photo.",
+      );
     } finally {
       setLoading(false);
     }
@@ -136,18 +151,19 @@ function App() {
   });
 
   const hasMatches = result?.match_count > 0;
+  const latestHistory = history.slice(0, 5);
 
   return (
-    <main className="page">
-      <section className="hero">
+    <main className="page app-shell">
+      <section className="hero app-hero">
         <div>
-          <p className="eyebrow">Personalized ingredient screening</p>
+          <p className="eyebrow">Mobile OCR ingredient review</p>
 
           <h1>Food Checker</h1>
 
           <p className="subtitle">
-            Upload a label photo or paste ingredients to review allergens,
-            additives, and dietary concerns.
+            Scan a label, review matched ingredients, and save each result to
+            your history.
           </p>
         </div>
 
@@ -164,140 +180,59 @@ function App() {
         </div>
       </section>
 
-      <section className="layout">
-        <div className="left-column">
-          <section className="card">
+      {errorMessage && (
+        <section className="card error-card">
+          <strong>Something went wrong</strong>
+          <p>{errorMessage}</p>
+        </section>
+      )}
+
+      <section className="layout app-layout">
+        <div className="right-column primary-flow">
+          <section className="card scan-card">
             <div className="card-header">
-              <h2>Select Rules</h2>
-
-              <p>Choose allergies, restrictions, or ingredient concerns.</p>
-            </div>
-
-            {Object.entries(groupedRules).map(([category, categoryRules]) => (
-              <div key={category} className="category">
-                <h3>{category.replace("_", " ")}</h3>
-
-                <div className="rules-grid">
-                  {categoryRules.map((rule) => (
-                    <label
-                      key={rule.id}
-                      className={
-                        selectedRules.includes(rule.id)
-                          ? "rule-card selected"
-                          : "rule-card"
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedRules.includes(rule.id)}
-                        onChange={() => toggleRule(rule.id)}
-                      />
-
-                      <span>{rule.display_name || rule.label || rule.id}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <section className="card">
-            <div className="card-header">
-              <h2>Recent Scans</h2>
-
-              <p>Your latest ingredient reviews.</p>
-            </div>
-
-            {history.length === 0 ? (
-              <p>No scans yet.</p>
-            ) : (
-              <div className="matches">
-                {history.slice(0, 5).map((scan) => (
-                  <article key={scan.id} className="match-card">
-                    <div className="match-topline">
-                      <h3>{scan.result?.risk_level || "unknown"}</h3>
-
-                      <span
-                        className={`severity ${
-                          scan.result?.risk_level || "low"
-                        }`}
-                      >
-                        {scan.result?.match_count || 0} match
-                      </span>
-                    </div>
-
-                    <p>{scan.result?.summary || "No summary available."}</p>
-
-                    <p>
-                      Text:{" "}
-                      <strong>
-                        {(scan.raw_text || "").slice(0, 80)}
-                        {(scan.raw_text || "").length > 80 ? "..." : ""}
-                      </strong>
-                    </p>
-
-                    <p>
-                      Date:{" "}
-                      <strong>
-                        {new Date(scan.created_at).toLocaleString()}
-                      </strong>
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-
-        <div className="right-column">
-          <section className="card">
-            <div className="card-header">
-              <h2>Upload Label Image</h2>
-
+              <p className="eyebrow">Step 1</p>
+              <h2>Scan Label</h2>
               <p>
-                Upload a food label photo to extract ingredients using OCR.
+                Upload a clear photo of the ingredients panel. This is the main
+                flow for the future mobile app.
               </p>
             </div>
 
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) =>
-                setSelectedImage(event.target.files?.[0] || null)
-              }
-            />
+            <label className="upload-box">
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageChange}
+              />
+
+              <span className="upload-title">
+                {selectedImage ? selectedImage.name : "Choose label photo"}
+              </span>
+
+              <span className="upload-help">
+                JPG, PNG, or WEBP. Use a close, well-lit photo.
+              </span>
+            </label>
 
             <button onClick={scanImage} disabled={loading || !selectedImage}>
-              {loading ? "Scanning..." : "Scan Image"}
+              {loading ? "Scanning label..." : "Scan Label"}
             </button>
-          </section>
 
-          <section className="card">
-            <div className="card-header">
-              <h2>Paste Ingredients</h2>
-
-              <p>Paste ingredients manually if needed.</p>
-            </div>
-
-            <textarea
-              placeholder="Example: wheat flour, sugar, soy lecithin..."
-              value={ingredientText}
-              onChange={(event) => setIngredientText(event.target.value)}
-            />
-
-            <button
-              onClick={analyzeIngredients}
-              disabled={loading || !ingredientText.trim()}
-            >
-              {loading ? "Analyzing..." : "Analyze Ingredients"}
-            </button>
+            {selectedRules.length === 0 && (
+              <p className="helper-note">
+                No preferences selected. The scan will still run, but selected
+                preferences make results more focused.
+              </p>
+            )}
           </section>
 
           {result && (
             <section className="card results-card">
               <div className="card-header">
-                <h2>Results</h2>
-
+                <p className="eyebrow">Step 2</p>
+                <h2>Review Result</h2>
                 <p>{result.summary}</p>
               </div>
 
@@ -310,6 +245,11 @@ function App() {
 
                 <span>Review level: {result.risk_level}</span>
               </div>
+
+              <details className="ocr-preview">
+                <summary>View extracted text</summary>
+                <p>{result.input_text}</p>
+              </details>
 
               {result.matches.length > 0 && (
                 <div className="matches">
@@ -342,6 +282,115 @@ function App() {
               )}
             </section>
           )}
+
+          <section className="card manual-card">
+            <div className="card-header">
+              <h2>Manual Backup</h2>
+              <p>
+                Paste ingredients manually when OCR misses text or you are
+                testing rules.
+              </p>
+            </div>
+
+            <textarea
+              placeholder="Example: wheat flour, sugar, soy lecithin..."
+              value={ingredientText}
+              onChange={(event) => setIngredientText(event.target.value)}
+            />
+
+            <button
+              onClick={analyzeIngredients}
+              disabled={loading || !ingredientText.trim()}
+            >
+              {loading ? "Analyzing..." : "Analyze Text"}
+            </button>
+          </section>
+        </div>
+
+        <div className="left-column secondary-flow">
+          <section className="card">
+            <div className="card-header">
+              <p className="eyebrow">Profile setup</p>
+              <h2>Your Preferences</h2>
+              <p>
+                These selections are temporary now. Later they become saved user
+                profile preferences.
+              </p>
+            </div>
+
+            {Object.entries(groupedRules).map(([category, categoryRules]) => (
+              <div key={category} className="category">
+                <h3>{category.replace("_", " ")}</h3>
+
+                <div className="rules-grid">
+                  {categoryRules.map((rule) => (
+                    <label
+                      key={rule.id}
+                      className={
+                        selectedRules.includes(rule.id)
+                          ? "rule-card selected"
+                          : "rule-card"
+                      }
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedRules.includes(rule.id)}
+                        onChange={() => toggleRule(rule.id)}
+                      />
+
+                      <span>{rule.display_name || rule.label || rule.id}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+
+          <section className="card">
+            <div className="card-header">
+              <h2>Recent Reviews</h2>
+              <p>Your latest saved ingredient reviews.</p>
+            </div>
+
+            {latestHistory.length === 0 ? (
+              <p>No reviews yet.</p>
+            ) : (
+              <div className="matches">
+                {latestHistory.map((scan) => (
+                  <article key={scan.id} className="match-card">
+                    <div className="match-topline">
+                      <h3>{scan.result?.risk_level || "unknown"}</h3>
+
+                      <span
+                        className={`severity ${
+                          scan.result?.risk_level || "low"
+                        }`}
+                      >
+                        {scan.result?.match_count || 0} match
+                      </span>
+                    </div>
+
+                    <p>{scan.result?.summary || "No summary available."}</p>
+
+                    <p>
+                      Text:{" "}
+                      <strong>
+                        {(scan.raw_text || "").slice(0, 90)}
+                        {(scan.raw_text || "").length > 90 ? "..." : ""}
+                      </strong>
+                    </p>
+
+                    <p>
+                      Date:{" "}
+                      <strong>
+                        {new Date(scan.created_at).toLocaleString()}
+                      </strong>
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </section>
     </main>
