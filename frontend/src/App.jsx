@@ -7,6 +7,8 @@ function App() {
   const [rules, setRules] = useState({});
   const [selectedRules, setSelectedRules] = useState([]);
   const [ingredientText, setIngredientText] = useState("");
+  const [selectedImage, setSelectedImage] = useState(null);
+
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -75,10 +77,43 @@ function App() {
       }
 
       const data = await response.json();
+
       setResult(data);
       fetchHistory();
     } catch (error) {
       console.error("Analysis failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function scanImage() {
+    if (!selectedImage) {
+      return;
+    }
+
+    setLoading(true);
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedImage);
+
+      const response = await fetch(`${API_BASE_URL}/scan/image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("OCR scan failed");
+      }
+
+      const data = await response.json();
+
+      setResult(data);
+      fetchHistory();
+    } catch (error) {
+      console.error("OCR scan failed:", error);
     } finally {
       setLoading(false);
     }
@@ -106,10 +141,12 @@ function App() {
       <section className="hero">
         <div>
           <p className="eyebrow">Personalized ingredient screening</p>
+
           <h1>Food Checker</h1>
+
           <p className="subtitle">
-            Select what matters to you, paste an ingredient label, and get a
-            focused ingredient review.
+            Upload a label photo or paste ingredients to review allergens,
+            additives, and dietary concerns.
           </p>
         </div>
 
@@ -118,6 +155,7 @@ function App() {
             <strong>{Object.keys(rules).length}</strong>
             <span>rules</span>
           </div>
+
           <div>
             <strong>{selectedRules.length}</strong>
             <span>selected</span>
@@ -130,7 +168,10 @@ function App() {
           <section className="card">
             <div className="card-header">
               <h2>Select Rules</h2>
-              <p>Choose allergies, restrictions, or ingredient concerns.</p>
+
+              <p>
+                Choose allergies, restrictions, or ingredient concerns.
+              </p>
             </div>
 
             {Object.entries(groupedRules).map(([category, categoryRules]) => (
@@ -152,7 +193,10 @@ function App() {
                         checked={selectedRules.includes(rule.id)}
                         onChange={() => toggleRule(rule.id)}
                       />
-                      <span>{rule.display_name || rule.label || rule.id}</span>
+
+                      <span>
+                        {rule.display_name || rule.label || rule.id}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -163,7 +207,8 @@ function App() {
           <section className="card">
             <div className="card-header">
               <h2>Recent Scans</h2>
-              <p>Your latest saved ingredient checks.</p>
+
+              <p>Your latest ingredient reviews.</p>
             </div>
 
             {history.length === 0 ? (
@@ -174,6 +219,7 @@ function App() {
                   <article key={scan.id} className="match-card">
                     <div className="match-topline">
                       <h3>{scan.result?.risk_level || "unknown"}</h3>
+
                       <span
                         className={`severity ${
                           scan.result?.risk_level || "low"
@@ -209,12 +255,38 @@ function App() {
         <div className="right-column">
           <section className="card">
             <div className="card-header">
-              <h2>Ingredients</h2>
-              <p>Paste a label exactly as it appears on the package.</p>
+              <h2>Upload Label Image</h2>
+
+              <p>
+                Upload a food label photo to extract ingredients using OCR.
+              </p>
+            </div>
+
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) =>
+                setSelectedImage(event.target.files?.[0] || null)
+              }
+            />
+
+            <button
+              onClick={scanImage}
+              disabled={loading || !selectedImage}
+            >
+              {loading ? "Scanning..." : "Scan Image"}
+            </button>
+          </section>
+
+          <section className="card">
+            <div className="card-header">
+              <h2>Paste Ingredients</h2>
+
+              <p>Paste ingredients manually if needed.</p>
             </div>
 
             <textarea
-              placeholder="Example: wheat flour, sugar, soy lecithin, peanut oil..."
+              placeholder="Example: wheat flour, sugar, soy lecithin..."
               value={ingredientText}
               onChange={(event) => setIngredientText(event.target.value)}
             />
@@ -231,6 +303,7 @@ function App() {
             <section className="card results-card">
               <div className="card-header">
                 <h2>Results</h2>
+
                 <p>{result.summary}</p>
               </div>
 
@@ -240,6 +313,7 @@ function App() {
                     ? "No flagged ingredients found"
                     : `${result.match_count} flagged ingredient(s) found`}
                 </strong>
+
                 <span>Review level: {result.risk_level}</span>
               </div>
 
@@ -249,12 +323,16 @@ function App() {
                     <article key={index} className="match-card">
                       <div className="match-topline">
                         <h3>{match.label || match.ingredient}</h3>
+
                         <span className={`severity ${match.severity}`}>
                           {match.severity}
                         </span>
                       </div>
 
-                      <p>{match.warning || "Ingredient matched this rule."}</p>
+                      <p>
+                        {match.warning ||
+                          "Ingredient matched this screening rule."}
+                      </p>
 
                       <p>
                         Matched ingredient:{" "}
