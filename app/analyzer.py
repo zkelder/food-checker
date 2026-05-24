@@ -44,7 +44,7 @@ def get_rule_keywords(rule_id: str, rule: dict) -> list[str]:
     """
     Return all searchable keywords for a rule.
     """
-    keywords = rule.get("keywords", [])
+    keywords = list(rule.get("keywords", []))
 
     if rule_id not in keywords:
         keywords.append(rule_id)
@@ -62,14 +62,14 @@ def find_matching_rules(
     normalized_text = normalize_text(ingredient_text)
     matches = []
 
-    rules_to_check = INGREDIENT_RULES
+    if not selected_rules:
+        return []
 
-    if selected_rules:
-        rules_to_check = {
-            rule_id: rule
-            for rule_id, rule in INGREDIENT_RULES.items()
-            if rule_id in selected_rules
-        }
+    rules_to_check = {
+        rule_id: rule
+        for rule_id, rule in INGREDIENT_RULES.items()
+        if rule_id in selected_rules
+    }
 
     for rule_id, rule in rules_to_check.items():
         keywords = get_rule_keywords(rule_id, rule)

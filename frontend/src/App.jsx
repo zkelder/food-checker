@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
 const API_BASE_URL =
@@ -9,16 +9,30 @@ function App() {
   const [selectedRules, setSelectedRules] = useState([]);
   const [ingredientText, setIngredientText] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
 
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeAction, setActiveAction] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     fetchRules();
     fetchHistory();
   }, []);
+
+  useEffect(() => {
+    if (!selectedImage) {
+      setImagePreviewUrl("");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedImage);
+    setImagePreviewUrl(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [selectedImage]);
 
   async function fetchRules() {
     try {
@@ -60,12 +74,21 @@ function App() {
   }
 
   function handleImageChange(event) {
-    setSelectedImage(event.target.files?.[0] || null);
+    const file = event.target.files?.[0] || null;
+
+    setSelectedImage(file);
+    setResult(null);
     setErrorMessage("");
+  }
+
+  function clearSelectedImage() {
+    setSelectedImage(null);
+    setImagePreviewUrl("");
   }
 
   async function analyzeIngredients() {
     setLoading(true);
+    setActiveAction("text");
     setResult(null);
     setErrorMessage("");
 
@@ -94,15 +117,18 @@ function App() {
       setErrorMessage("Could not analyze ingredients. Check that the backend is running.");
     } finally {
       setLoading(false);
+      setActiveAction("");
     }
   }
 
   async function scanImage() {
     if (!selectedImage) {
+      setErrorMessage("Choose a label photo before scanning.");
       return;
     }
 
     setLoading(true);
+    setActiveAction("image");
     setResult(null);
     setErrorMessage("");
 
@@ -133,23 +159,28 @@ function App() {
       );
     } finally {
       setLoading(false);
+      setActiveAction("");
     }
   }
 
-  const groupedRules = {};
+  const groupedRules = useMemo(() => {
+    const groups = {};
 
-  Object.entries(rules).forEach(([ruleId, ruleData]) => {
-    const category = ruleData.category || "general";
+    Object.entries(rules).forEach(([ruleId, ruleData]) => {
+      const category = ruleData.category || "general";
 
-    if (!groupedRules[category]) {
-      groupedRules[category] = [];
-    }
+      if (!groups[category]) {
+        groups[category] = [];
+      }
 
-    groupedRules[category].push({
-      id: ruleId,
-      ...ruleData,
+      groups[category].push({
+        id: ruleId,
+        ...ruleData,
+      });
     });
-  });
+
+    return groups;
+  }, [rules]);
 
   const hasMatches = result?.match_count > 0;
   const latestHistory = history.slice(0, 5);
@@ -158,7 +189,7 @@ function App() {
     <main className="page app-shell">
       <section className="hero app-hero">
         <div>
-          <p className="eyebrow">Mobile OCR ingredient review</p>
+          <p className="eyebrow">Camera-first ingredient review</p>
 
           <h1>Food Checker</h1>
 
@@ -188,15 +219,29 @@ function App() {
         </section>
       )}
 
+      {loading && (
+        <section className="card loading-card">
+          <div className="spinner" />
+          <div>
+            <strong>
+              {activeAction === "image"
+                ? "Scanning ingredient label..."
+                : "Analyzing ingredient text..."}
+            </strong>
+            <p>This may take a few seconds for OCR images.</p>
+          </div>
+        </section>
+      )}
+
       <section className="layout app-layout">
         <div className="right-column primary-flow">
           <section className="card scan-card">
             <div className="card-header">
-              <p className="eyebrow">Step 1</p>
+              <p className="eyebrow">Main action</p>
               <h2>Scan Label</h2>
               <p>
-                Upload a clear photo of the ingredients panel. This is the main
-                flow for the future mobile app.
+                Upload or take a clear photo of the ingredients panel. This is
+                the future home screen flow for the mobile app.
               </p>
             </div>
 
@@ -217,8 +262,26 @@ function App() {
               </span>
             </label>
 
+            {imagePreviewUrl && (
+              <div className="image-preview-card">
+                <img src={imagePreviewUrl} alt="Selected ingredient label preview" />
+
+                <div className="image-preview-actions">
+                  <span>Preview ready</span>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    onClick={clearSelectedImage}
+                    disabled={loading}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            )}
+
             <button onClick={scanImage} disabled={loading || !selectedImage}>
-              {loading ? "Scanning label..." : "Scan Label"}
+              {loading && activeAction === "image" ? "Scanning..." : "Scan Label"}
             </button>
 
             {selectedRules.length === 0 && (
@@ -232,7 +295,7 @@ function App() {
           {result && (
             <section className="card results-card">
               <div className="card-header">
-                <p className="eyebrow">Step 2</p>
+                <p className="eyebrow">Result</p>
                 <h2>Review Result</h2>
                 <p>{result.summary}</p>
               </div>
@@ -246,11 +309,6 @@ function App() {
 
                 <span>Review level: {result.risk_level}</span>
               </div>
-
-              <details className="ocr-preview">
-                <summary>View extracted text</summary>
-                <p>{result.input_text}</p>
-              </details>
 
               {result.matches.length > 0 && (
                 <div className="matches">
@@ -270,8 +328,7 @@ function App() {
                       </p>
 
                       <p>
-                        Matched ingredient:{" "}
-                        <strong>{match.ingredient}</strong>
+                        Matched ingredient: <strong>{match.ingredient}</strong>
                       </p>
 
                       <p>
@@ -281,6 +338,11 @@ function App() {
                   ))}
                 </div>
               )}
+
+              <details className="ocr-preview">
+                <summary>View extracted text</summary>
+                <p>{result.input_text}</p>
+              </details>
             </section>
           )}
 
@@ -303,7 +365,7 @@ function App() {
               onClick={analyzeIngredients}
               disabled={loading || !ingredientText.trim()}
             >
-              {loading ? "Analyzing..." : "Analyze Text"}
+              {loading && activeAction === "text" ? "Analyzing..." : "Analyze Text"}
             </button>
           </section>
         </div>
