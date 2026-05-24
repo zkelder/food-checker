@@ -584,3 +584,131 @@ button:disabled {
     border-color: rgba(251, 146, 60, 0.3);
   }
 }
+
+.app-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+
+  margin: 0 0 24px;
+  padding: 8px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+
+  background: rgba(17, 24, 39, 0.72);
+  backdrop-filter: blur(18px);
+}
+
+.tab-button {
+  min-height: 48px;
+  padding: 12px 14px;
+
+  border-radius: 16px;
+
+  background: rgba(255, 255, 255, 0.05);
+  color: #d1d5db;
+
+  box-shadow: none;
+}
+
+.tab-button:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+  background: rgba(251, 146, 60, 0.12);
+}
+
+.tab-button.active {
+  background: linear-gradient(135deg, #ea580c, #dc2626);
+  color: white;
+}
+
+.tab-panel {
+  display: grid;
+  gap: 0;
+}
+
+.loading-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.loading-card p {
+  margin: 6px 0 0;
+  color: #9ca3af;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+
+  border: 3px solid rgba(255, 255, 255, 0.16);
+  border-top-color: #fb923c;
+  border-radius: 999px;
+
+  animation: spin 0.8s linear infinite;
+}
+
+.image-preview-card {
+  margin-bottom: 16px;
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.image-preview-card img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: cover;
+}
+
+.image-preview-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 12px 14px;
+}
+
+.image-preview-actions span {
+  color: #d1d5db;
+  font-weight: 800;
+}
+
+.secondary-button {
+  width: auto;
+  min-height: 40px;
+  padding: 9px 14px;
+
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 560px) {
+  .app-tabs {
+    position: sticky;
+    top: 8px;
+    z-index: 10;
+
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+
+  .tab-button {
+    min-height: 46px;
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+}

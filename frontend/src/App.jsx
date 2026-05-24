@@ -11,6 +11,8 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 function App() {
+  const [activeTab, setActiveTab] = useState("scan");
+
   const [rules, setRules] = useState({});
   const [selectedRules, setSelectedRules] = useState([]);
   const [ingredientText, setIngredientText] = useState("");
@@ -43,10 +45,7 @@ function App() {
   async function fetchRules() {
     try {
       const response = await fetch(`${API_BASE_URL}/rules`);
-
-      if (!response.ok) {
-        throw new Error("Could not load preferences.");
-      }
+      if (!response.ok) throw new Error("Could not load preferences.");
 
       const data = await response.json();
       setRules(data);
@@ -59,10 +58,7 @@ function App() {
   async function fetchHistory() {
     try {
       const response = await fetch(`${API_BASE_URL}/history`);
-
-      if (!response.ok) {
-        throw new Error("Could not load history.");
-      }
+      if (!response.ok) throw new Error("Could not load history.");
 
       const data = await response.json();
       setHistory(data);
@@ -81,7 +77,6 @@ function App() {
 
   function handleImageChange(event) {
     const file = event.target.files?.[0] || null;
-
     setSelectedImage(file);
     setResult(null);
     setErrorMessage("");
@@ -110,13 +105,11 @@ function App() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Analyze request failed.");
-      }
+      if (!response.ok) throw new Error("Analyze request failed.");
 
       const data = await response.json();
-
       setResult(data);
+      setActiveTab("scan");
       fetchHistory();
     } catch (error) {
       console.error("Analysis failed:", error);
@@ -154,8 +147,8 @@ function App() {
       }
 
       const data = await response.json();
-
       setResult(data);
+      setActiveTab("scan");
       fetchHistory();
     } catch (error) {
       console.error("OCR scan failed:", error);
@@ -175,9 +168,7 @@ function App() {
     Object.entries(rules).forEach(([ruleId, ruleData]) => {
       const category = ruleData.category || "general";
 
-      if (!groups[category]) {
-        groups[category] = [];
-      }
+      if (!groups[category]) groups[category] = [];
 
       groups[category].push({
         id: ruleId,
@@ -193,9 +184,7 @@ function App() {
       <section className="hero app-hero">
         <div>
           <p className="eyebrow">Camera-first ingredient review</p>
-
           <h1>Food Checker</h1>
-
           <p className="subtitle">
             Scan a label, review matched ingredients, and save each result to
             your history.
@@ -214,6 +203,31 @@ function App() {
           </div>
         </div>
       </section>
+
+      <nav className="app-tabs" aria-label="App sections">
+        <button
+          className={activeTab === "scan" ? "tab-button active" : "tab-button"}
+          onClick={() => setActiveTab("scan")}
+        >
+          Scan
+        </button>
+
+        <button
+          className={activeTab === "history" ? "tab-button active" : "tab-button"}
+          onClick={() => setActiveTab("history")}
+        >
+          History
+        </button>
+
+        <button
+          className={
+            activeTab === "preferences" ? "tab-button active" : "tab-button"
+          }
+          onClick={() => setActiveTab("preferences")}
+        >
+          Preferences
+        </button>
+      </nav>
 
       {errorMessage && (
         <section className="card error-card">
@@ -236,8 +250,8 @@ function App() {
         </section>
       )}
 
-      <section className="layout app-layout">
-        <div className="right-column primary-flow">
+      {activeTab === "scan" && (
+        <section className="tab-panel">
           <ScanCard
             selectedImage={selectedImage}
             imagePreviewUrl={imagePreviewUrl}
@@ -258,18 +272,24 @@ function App() {
             onIngredientTextChange={setIngredientText}
             onAnalyzeIngredients={analyzeIngredients}
           />
-        </div>
+        </section>
+      )}
 
-        <div className="left-column secondary-flow">
+      {activeTab === "history" && (
+        <section className="tab-panel">
+          <HistoryCard history={history} />
+        </section>
+      )}
+
+      {activeTab === "preferences" && (
+        <section className="tab-panel">
           <PreferencesCard
             groupedRules={groupedRules}
             selectedRules={selectedRules}
             onToggleRule={toggleRule}
           />
-
-          <HistoryCard history={history} />
-        </div>
-      </section>
+        </section>
+      )}
     </main>
   );
 }
