@@ -10,11 +10,26 @@ import ScanCard from "./components/ScanCard";
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
+const SELECTED_RULES_STORAGE_KEY = "food_checker_selected_rules";
+
 function App() {
   const [activeTab, setActiveTab] = useState("scan");
 
   const [rules, setRules] = useState({});
-  const [selectedRules, setSelectedRules] = useState([]);
+  const [selectedRules, setSelectedRules] = useState(() => {
+    const savedRules = localStorage.getItem(SELECTED_RULES_STORAGE_KEY);
+
+    if (!savedRules) {
+      return [];
+    }
+
+    try {
+      const parsedRules = JSON.parse(savedRules);
+      return Array.isArray(parsedRules) ? parsedRules : [];
+    } catch {
+      return [];
+    }
+  });
   const [ingredientText, setIngredientText] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -29,6 +44,13 @@ function App() {
     fetchRules();
     fetchHistory();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      SELECTED_RULES_STORAGE_KEY,
+      JSON.stringify(selectedRules),
+    );
+  }, [selectedRules]);
 
   useEffect(() => {
     if (!selectedImage) {
