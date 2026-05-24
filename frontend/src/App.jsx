@@ -75,6 +75,31 @@ function App() {
     );
   }
 
+  function clearRules() {
+    setSelectedRules([]);
+  }
+
+  function selectCommonAllergens() {
+    const commonAllergenIds = [
+      "dairy",
+      "milk",
+      "peanut",
+      "tree_nut",
+      "egg",
+      "soy",
+      "wheat",
+      "gluten",
+      "fish",
+      "shellfish",
+    ];
+
+    const availableCommonAllergens = commonAllergenIds.filter(
+      (ruleId) => rules[ruleId],
+    );
+
+    setSelectedRules(availableCommonAllergens);
+  }
+
   function handleImageChange(event) {
     const file = event.target.files?.[0] || null;
     setSelectedImage(file);
@@ -186,6 +211,13 @@ function App() {
     return groups;
   }, [rules]);
 
+  const selectedRuleLabels = useMemo(() => {
+    return selectedRules.map((ruleId) => {
+      const rule = rules[ruleId];
+      return rule?.display_name || rule?.label || ruleId;
+    });
+  }, [selectedRules, rules]);
+
   return (
     <main className="page app-shell">
       <section className="hero app-hero">
@@ -293,7 +325,10 @@ function App() {
           <PreferencesCard
             groupedRules={groupedRules}
             selectedRules={selectedRules}
+            selectedRuleLabels={selectedRuleLabels}
             onToggleRule={toggleRule}
+            onClearRules={clearRules}
+            onSelectCommonAllergens={selectCommonAllergens}
           />
         </section>
       )}
