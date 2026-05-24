@@ -9,17 +9,26 @@ function ScanCard({
   onScanImage,
 }) {
   return (
-    <section className="card scan-card">
-      <div className="card-header">
-        <p className="eyebrow">Main action</p>
-        <h2>Scan Label</h2>
+    <section className="card scan-card mobile-home-card">
+      <div className="scan-hero-copy">
+        <p className="eyebrow">Scan home</p>
+        <h2>Point, capture, check.</h2>
         <p>
-          Upload or take a clear photo of the ingredients panel. This is the
-          future home screen flow for the mobile app.
+          Take a clear photo of the ingredients panel. Food Checker will extract
+          the label text and compare it against your saved scan preferences.
         </p>
       </div>
 
-      <label className="upload-box">
+      <div className="scan-preference-pill">
+        <span>{selectedRulesCount}</span>
+        <strong>
+          {selectedRulesCount === 1
+            ? "preference active"
+            : "preferences active"}
+        </strong>
+      </div>
+
+      <label className="upload-box camera-upload-box">
         <input
           type="file"
           accept="image/*"
@@ -27,41 +36,48 @@ function ScanCard({
           onChange={onImageChange}
         />
 
+        <span className="camera-icon">📷</span>
+
         <span className="upload-title">
-          {selectedImage ? selectedImage.name : "Choose label photo"}
+          {selectedImage ? selectedImage.name : "Open Camera / Choose Photo"}
         </span>
 
         <span className="upload-help">
-          JPG, PNG, or WEBP. Use a close, well-lit photo.
+          Use a close, bright photo with the full ingredient list visible.
         </span>
       </label>
 
       {imagePreviewUrl && (
-        <div className="image-preview-card">
+        <div className="image-preview-card phone-preview-card">
           <img src={imagePreviewUrl} alt="Selected ingredient label preview" />
 
           <div className="image-preview-actions">
-            <span>Preview ready</span>
+            <span>Photo ready to scan</span>
+
             <button
               type="button"
               className="secondary-button"
               onClick={onClearImage}
               disabled={loading}
             >
-              Remove
+              Retake
             </button>
           </div>
         </div>
       )}
 
-      <button onClick={onScanImage} disabled={loading || !selectedImage}>
-        {loading && activeAction === "image" ? "Scanning..." : "Scan Label"}
+      <button
+        className="primary-scan-button"
+        onClick={onScanImage}
+        disabled={loading || !selectedImage}
+      >
+        {loading && activeAction === "image" ? "Scanning..." : "Scan Ingredients"}
       </button>
 
       {selectedRulesCount === 0 && (
-        <p className="helper-note">
-          No preferences selected. The scan will still run, but selected
-          preferences make results more focused.
+        <p className="helper-note scan-warning-note">
+          No preferences selected yet. Go to Preferences to choose what scans
+          should check for.
         </p>
       )}
     </section>

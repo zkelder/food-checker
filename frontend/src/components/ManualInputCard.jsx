@@ -6,31 +6,33 @@ function ManualInputCard({
   onAnalyzeIngredients,
 }) {
   return (
-    <section className="card manual-card">
-      <div className="card-header">
-        <h2>Manual Backup</h2>
+    <details className="manual-fallback">
+      <summary>Manual text backup</summary>
 
-        <p>
-          Paste ingredients manually when OCR misses text or you are testing
-          rules.
-        </p>
-      </div>
+      <section className="card manual-card compact-manual-card">
+        <div className="card-header">
+          <h2>Analyze Text</h2>
 
-      <textarea
-        placeholder="Example: wheat flour, sugar, soy lecithin..."
-        value={ingredientText}
-        onChange={(event) => onIngredientTextChange(event.target.value)}
-      />
+          <p>
+            Use this when OCR misses text or when you want to test a label
+            without taking a photo.
+          </p>
+        </div>
 
-      <button
-        onClick={onAnalyzeIngredients}
-        disabled={loading || !ingredientText.trim()}
-      >
-        {loading && activeAction === "text"
-          ? "Analyzing..."
-          : "Analyze Text"}
-      </button>
-    </section>
+        <textarea
+          placeholder="Example: wheat flour, sugar, soy lecithin..."
+          value={ingredientText}
+          onChange={(event) => onIngredientTextChange(event.target.value)}
+        />
+
+        <button
+          onClick={onAnalyzeIngredients}
+          disabled={loading || !ingredientText.trim()}
+        >
+          {loading && activeAction === "text" ? "Analyzing..." : "Analyze Text"}
+        </button>
+      </section>
+    </details>
   );
 }
 
