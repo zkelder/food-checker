@@ -87,6 +87,13 @@ function App() {
     setImagePreviewUrl("");
   }
 
+  function handleSelectHistoryScan(scan) {
+    setResult(scan.result);
+    setIngredientText(scan.raw_text || "");
+    setActiveTab("scan");
+    setErrorMessage("");
+  }
+
   async function analyzeIngredients() {
     setLoading(true);
     setActiveAction("text");
@@ -277,7 +284,7 @@ function App() {
 
       {activeTab === "history" && (
         <section className="tab-panel">
-          <HistoryCard history={history} />
+          <HistoryCard history={history} onSelectScan={handleSelectHistoryScan} />
         </section>
       )}
 
