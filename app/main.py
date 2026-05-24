@@ -61,13 +61,15 @@ def analyze(
     """
     Analyze ingredient text against selected rules and save the scan.
     """
+    cleaned_text = " ".join(request.text.split()).lower()
+
     result = analyze_ingredients(
-        ingredient_text=request.text,
+        ingredient_text=cleaned_text,
         selected_rules=request.selected_rules,
     )
 
     scan = Scan(
-        raw_text=request.text,
+        raw_text=cleaned_text,
         selected_rules=request.selected_rules,
         result=result,
     )
@@ -110,13 +112,23 @@ def scan_image(
 
         extracted_text = extract_text_from_image(temp_path)
 
+        cleaned_text = (
+            extracted_text.replace("\n", " ")
+            .replace("INGREDIENTS:", "")
+            .replace("Ingredients:", "")
+            .replace("ingredients:", "")
+            .strip()
+        )
+
+        cleaned_text = " ".join(cleaned_text.split()).lower()
+
         result = analyze_ingredients(
-            ingredient_text=extracted_text,
+            ingredient_text=cleaned_text,
             selected_rules=parsed_selected_rules,
         )
 
         scan = Scan(
-            raw_text=extracted_text,
+            raw_text=cleaned_text,
             selected_rules=parsed_selected_rules,
             result=result,
         )
