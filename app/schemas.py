@@ -62,3 +62,26 @@ class ScanHistoryResponse(BaseModel):
         """
 
         from_attributes = True
+
+
+class UserProfileResponse(BaseModel):
+    """
+    Current user profile response.
+    """
+
+    id: int
+    user_id: str | None
+    selected_rules: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UpdateUserProfileRequest(BaseModel):
+    """
+    Update profile preferences request.
+    """
+
+    selected_rules: list[str]
