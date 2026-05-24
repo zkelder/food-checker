@@ -12,24 +12,26 @@ const API_BASE_URL =
 
 const SELECTED_RULES_STORAGE_KEY = "food_checker_selected_rules";
 
+function loadStoredSelectedRules() {
+  const savedRules = localStorage.getItem(SELECTED_RULES_STORAGE_KEY);
+
+  if (!savedRules) {
+    return [];
+  }
+
+  try {
+    const parsedRules = JSON.parse(savedRules);
+    return Array.isArray(parsedRules) ? parsedRules : [];
+  } catch {
+    return [];
+  }
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState("scan");
 
   const [rules, setRules] = useState({});
-  const [selectedRules, setSelectedRules] = useState(() => {
-    const savedRules = localStorage.getItem(SELECTED_RULES_STORAGE_KEY);
-
-    if (!savedRules) {
-      return [];
-    }
-
-    try {
-      const parsedRules = JSON.parse(savedRules);
-      return Array.isArray(parsedRules) ? parsedRules : [];
-    } catch {
-      return [];
-    }
-  });
+  const [selectedRules, setSelectedRules] = useState(loadStoredSelectedRules);
   const [ingredientText, setIngredientText] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState("");
@@ -39,10 +41,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [activeAction, setActiveAction] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   useEffect(() => {
     fetchRules();
     fetchHistory();
+    fetchProfile();
   }, []);
 
   useEffect(() => {
@@ -50,7 +54,11 @@ function App() {
       SELECTED_RULES_STORAGE_KEY,
       JSON.stringify(selectedRules),
     );
-  }, [selectedRules]);
+
+    if (profileLoaded) {
+      saveProfile(selectedRules);
+    }
+  }, [selectedRules, profileLoaded]);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -86,6 +94,43 @@ function App() {
       setHistory(data);
     } catch (error) {
       console.error("Failed to load history:", error);
+    }
+  }
+
+  async function fetchProfile() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`);
+      if (!response.ok) throw new Error("Could not load profile.");
+
+      const profile = await response.json();
+
+      if (Array.isArray(profile.selected_rules)) {
+        setSelectedRules(profile.selected_rules);
+      }
+    } catch (error) {
+      console.error("Failed to load profile:", error);
+    } finally {
+      setProfileLoaded(true);
+    }
+  }
+
+  async function saveProfile(nextSelectedRules) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          selected_rules: nextSelectedRules,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Could not save profile.");
+      }
+    } catch (error) {
+      console.error("Failed to save profile:", error);
     }
   }
 
