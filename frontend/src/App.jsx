@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import "./App.css";
 
+import HistoryCard from "./components/HistoryCard";
+import ManualInputCard from "./components/ManualInputCard";
+import PreferencesCard from "./components/PreferencesCard";
+import ResultCard from "./components/ResultCard";
+import ScanCard from "./components/ScanCard";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -182,9 +188,6 @@ function App() {
     return groups;
   }, [rules]);
 
-  const hasMatches = result?.match_count > 0;
-  const latestHistory = history.slice(0, 5);
-
   return (
     <main className="page app-shell">
       <section className="hero app-hero">
@@ -235,225 +238,36 @@ function App() {
 
       <section className="layout app-layout">
         <div className="right-column primary-flow">
-          <section className="card scan-card">
-            <div className="card-header">
-              <p className="eyebrow">Main action</p>
-              <h2>Scan Label</h2>
-              <p>
-                Upload or take a clear photo of the ingredients panel. This is
-                the future home screen flow for the mobile app.
-              </p>
-            </div>
+          <ScanCard
+            selectedImage={selectedImage}
+            imagePreviewUrl={imagePreviewUrl}
+            loading={loading}
+            activeAction={activeAction}
+            selectedRulesCount={selectedRules.length}
+            onImageChange={handleImageChange}
+            onClearImage={clearSelectedImage}
+            onScanImage={scanImage}
+          />
 
-            <label className="upload-box">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleImageChange}
-              />
+          <ResultCard result={result} />
 
-              <span className="upload-title">
-                {selectedImage ? selectedImage.name : "Choose label photo"}
-              </span>
-
-              <span className="upload-help">
-                JPG, PNG, or WEBP. Use a close, well-lit photo.
-              </span>
-            </label>
-
-            {imagePreviewUrl && (
-              <div className="image-preview-card">
-                <img src={imagePreviewUrl} alt="Selected ingredient label preview" />
-
-                <div className="image-preview-actions">
-                  <span>Preview ready</span>
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={clearSelectedImage}
-                    disabled={loading}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <button onClick={scanImage} disabled={loading || !selectedImage}>
-              {loading && activeAction === "image" ? "Scanning..." : "Scan Label"}
-            </button>
-
-            {selectedRules.length === 0 && (
-              <p className="helper-note">
-                No preferences selected. The scan will still run, but selected
-                preferences make results more focused.
-              </p>
-            )}
-          </section>
-
-          {result && (
-            <section className="card results-card">
-              <div className="card-header">
-                <p className="eyebrow">Result</p>
-                <h2>Review Result</h2>
-                <p>{result.summary}</p>
-              </div>
-
-              <div className={!hasMatches ? "status safe" : "status warning"}>
-                <strong>
-                  {!hasMatches
-                    ? "No flagged ingredients found"
-                    : `${result.match_count} flagged ingredient(s) found`}
-                </strong>
-
-                <span>Review level: {result.risk_level}</span>
-              </div>
-
-              {result.matches.length > 0 && (
-                <div className="matches">
-                  {result.matches.map((match, index) => (
-                    <article key={index} className="match-card">
-                      <div className="match-topline">
-                        <h3>{match.label || match.ingredient}</h3>
-
-                        <span className={`severity ${match.severity}`}>
-                          {match.severity}
-                        </span>
-                      </div>
-
-                      <p>
-                        {match.warning ||
-                          "Ingredient matched this screening rule."}
-                      </p>
-
-                      <p>
-                        Matched ingredient: <strong>{match.ingredient}</strong>
-                      </p>
-
-                      <p>
-                        Category: <strong>{match.category}</strong>
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              )}
-
-              <details className="ocr-preview">
-                <summary>View extracted text</summary>
-                <p>{result.input_text}</p>
-              </details>
-            </section>
-          )}
-
-          <section className="card manual-card">
-            <div className="card-header">
-              <h2>Manual Backup</h2>
-              <p>
-                Paste ingredients manually when OCR misses text or you are
-                testing rules.
-              </p>
-            </div>
-
-            <textarea
-              placeholder="Example: wheat flour, sugar, soy lecithin..."
-              value={ingredientText}
-              onChange={(event) => setIngredientText(event.target.value)}
-            />
-
-            <button
-              onClick={analyzeIngredients}
-              disabled={loading || !ingredientText.trim()}
-            >
-              {loading && activeAction === "text" ? "Analyzing..." : "Analyze Text"}
-            </button>
-          </section>
+          <ManualInputCard
+            ingredientText={ingredientText}
+            loading={loading}
+            activeAction={activeAction}
+            onIngredientTextChange={setIngredientText}
+            onAnalyzeIngredients={analyzeIngredients}
+          />
         </div>
 
         <div className="left-column secondary-flow">
-          <section className="card">
-            <div className="card-header">
-              <p className="eyebrow">Profile setup</p>
-              <h2>Your Preferences</h2>
-              <p>
-                These selections are temporary now. Later they become saved user
-                profile preferences.
-              </p>
-            </div>
+          <PreferencesCard
+            groupedRules={groupedRules}
+            selectedRules={selectedRules}
+            onToggleRule={toggleRule}
+          />
 
-            {Object.entries(groupedRules).map(([category, categoryRules]) => (
-              <div key={category} className="category">
-                <h3>{category.replace("_", " ")}</h3>
-
-                <div className="rules-grid">
-                  {categoryRules.map((rule) => (
-                    <label
-                      key={rule.id}
-                      className={
-                        selectedRules.includes(rule.id)
-                          ? "rule-card selected"
-                          : "rule-card"
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedRules.includes(rule.id)}
-                        onChange={() => toggleRule(rule.id)}
-                      />
-
-                      <span>{rule.display_name || rule.label || rule.id}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <section className="card">
-            <div className="card-header">
-              <h2>Recent Reviews</h2>
-              <p>Your latest saved ingredient reviews.</p>
-            </div>
-
-            {latestHistory.length === 0 ? (
-              <p>No reviews yet.</p>
-            ) : (
-              <div className="matches">
-                {latestHistory.map((scan) => (
-                  <article key={scan.id} className="match-card">
-                    <div className="match-topline">
-                      <h3>{scan.result?.risk_level || "unknown"}</h3>
-
-                      <span
-                        className={`severity ${
-                          scan.result?.risk_level || "low"
-                        }`}
-                      >
-                        {scan.result?.match_count || 0} match
-                      </span>
-                    </div>
-
-                    <p>{scan.result?.summary || "No summary available."}</p>
-
-                    <p>
-                      Text:{" "}
-                      <strong>
-                        {(scan.raw_text || "").slice(0, 90)}
-                        {(scan.raw_text || "").length > 90 ? "..." : ""}
-                      </strong>
-                    </p>
-
-                    <p>
-                      Date:{" "}
-                      <strong>
-                        {new Date(scan.created_at).toLocaleString()}
-                      </strong>
-                    </p>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+          <HistoryCard history={history} />
         </div>
       </section>
     </main>
