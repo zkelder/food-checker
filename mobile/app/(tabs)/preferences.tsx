@@ -9,13 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  getProfile,
-  getRules,
-  IngredientRule,
-  RulesResponse,
-  updateProfile,
-} from '@/lib/api';
+import { getProfile, getRules, updateProfile } from '@/lib/api';
+import type { IngredientRule, RulesResponse } from '@/lib/api';
 
 const COMMON_ALLERGEN_IDS = [
   'dairy',
@@ -151,7 +146,9 @@ export default function PreferencesScreen() {
               </View>
 
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryNumber}>{Object.keys(rules).length}</Text>
+                <Text style={styles.summaryNumber}>
+                  {Object.keys(rules).length}
+                </Text>
                 <Text style={styles.summaryLabel}>available</Text>
               </View>
             </View>
@@ -169,12 +166,12 @@ export default function PreferencesScreen() {
               </Pressable>
             </View>
 
-            {saving && (
+            {saving ? (
               <View style={styles.savingCard}>
                 <ActivityIndicator color="#fb923c" size="small" />
                 <Text style={styles.savingText}>Saving preferences...</Text>
               </View>
-            )}
+            ) : null}
 
             {errorMessage ? (
               <View style={styles.errorCard}>
@@ -226,14 +223,14 @@ export default function PreferencesScreen() {
                         key={rule.id}
                         style={[
                           styles.rulePill,
-                          selected && styles.rulePillSelected,
+                          selected ? styles.rulePillSelected : null,
                         ]}
                         onPress={() => toggleRule(rule.id)}
                       >
                         <Text
                           style={[
                             styles.ruleText,
-                            selected && styles.ruleTextSelected,
+                            selected ? styles.ruleTextSelected : null,
                           ]}
                         >
                           {label}
@@ -398,7 +395,7 @@ const styles = StyleSheet.create({
   },
   selectedPillText: {
     color: '#fed7aa',
-    fontWeight: '850',
+    fontWeight: '800',
   },
   noticeCard: {
     padding: 18,

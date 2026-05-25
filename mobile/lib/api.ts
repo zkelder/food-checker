@@ -21,6 +21,27 @@ export type UserProfile = {
   updated_at: string;
 };
 
+export type ScanHistoryItem = {
+  id: number;
+  raw_text: string;
+  selected_rules: string[];
+  result: {
+    input_text?: string;
+    normalized_text?: string;
+    risk_level?: string;
+    summary?: string;
+    matches?: Array<{
+      ingredient: string;
+      label: string;
+      warning: string;
+      severity: string;
+      category: string;
+    }>;
+    match_count?: number;
+  };
+  created_at: string;
+};
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -52,4 +73,8 @@ export function updateProfile(selectedRules: string[]) {
       selected_rules: selectedRules,
     }),
   });
+}
+
+export function getHistory() {
+  return request<ScanHistoryItem[]>('/history');
 }
