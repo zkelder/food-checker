@@ -84,6 +84,12 @@ export default function ScanScreen() {
     }
   }
 
+  function clearScan() {
+    setImageUri('');
+    setResult(null);
+    setErrorMessage('');
+  }
+
   async function choosePhoto() {
     setErrorMessage('');
     setResult(null);
@@ -214,7 +220,15 @@ export default function ScanScreen() {
             <View style={styles.previewCard}>
               <Image source={{ uri: imageUri }} style={styles.previewImage} />
 
-              <Text style={styles.previewText}>Photo ready to scan</Text>
+              <View style={styles.previewFooter}>
+                <Text style={styles.previewText}>Photo ready to scan</Text>
+
+                <Pressable style={styles.clearButton} onPress={clearScan}>
+                  <Text style={styles.clearButtonText}>
+                    {result ? 'Scan Another' : 'Clear'}
+                  </Text>
+                </Pressable>
+              </View>
             </View>
           ) : null}
 
@@ -280,7 +294,10 @@ export default function ScanScreen() {
             {result.matches.length > 0 ? (
               <View style={styles.matchesList}>
                 {result.matches.map((match, index) => (
-                  <View key={`${match.ingredient}-${index}`} style={styles.matchCard}>
+                  <View
+                    key={`${match.ingredient}-${index}`}
+                    style={styles.matchCard}
+                  >
                     <View style={styles.matchTopline}>
                       <Text style={styles.matchLabel}>{match.label}</Text>
                       <Text style={styles.matchSeverity}>
@@ -441,10 +458,27 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 260,
   },
+  previewFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    padding: 12,
+  },
   previewText: {
+    flex: 1,
     color: '#d1d5db',
     fontWeight: '800',
-    padding: 12,
+  },
+  clearButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  clearButtonText: {
+    color: '#f8fafc',
+    fontWeight: '900',
   },
   primaryButton: {
     width: '100%',
