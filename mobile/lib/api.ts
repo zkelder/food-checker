@@ -1,5 +1,6 @@
-export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { Platform } from 'react-native';
+
+export const API_BASE_URL = 'http://localhost:8000';
 
 export type IngredientRule = {
   display_name?: string;
@@ -21,24 +22,28 @@ export type UserProfile = {
   updated_at: string;
 };
 
+export type MatchResponse = {
+  ingredient: string;
+  label: string;
+  warning: string;
+  severity: string;
+  category: string;
+};
+
+export type AnalyzeResponse = {
+  input_text: string;
+  normalized_text: string;
+  risk_level: string;
+  summary: string;
+  matches: MatchResponse[];
+  match_count: number;
+};
+
 export type ScanHistoryItem = {
   id: number;
   raw_text: string;
   selected_rules: string[];
-  result: {
-    input_text?: string;
-    normalized_text?: string;
-    risk_level?: string;
-    summary?: string;
-    matches?: Array<{
-      ingredient: string;
-      label: string;
-      warning: string;
-      severity: string;
-      category: string;
-    }>;
-    match_count?: number;
-  };
+  result: AnalyzeResponse;
   created_at: string;
 };
 
@@ -56,6 +61,24 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return response.json();
+}
+
+function getErrorMessage(errorData: unknown, fallback: string) {
+  if (
+    errorData &&
+    typeof errorData === 'object' &&
+    'detail' in errorData
+  ) {
+    const detail = (errorData as { detail: unknown }).detail;
+
+    if (typeof detail === 'string') {
+      return detail;
+    }
+
+    return JSON.stringify(detail);
+  }
+
+  return fallback;
 }
 
 export function getRules() {
@@ -77,4 +100,41 @@ export function updateProfile(selectedRules: string[]) {
 
 export function getHistory() {
   return request<ScanHistoryItem[]>('/history');
+}
+
+export async function uploadScanImage(
+  imageUri: string,
+  selectedRules: string[],
+): Promise<AnalyzeResponse> {
+  const formData = new FormData();
+
+  if (Platform.OS === 'web') {
+    const imageResponse = await fetch(imageUri);
+    const imageBlob = await imageResponse.blob();
+
+    formData.append('file', imageBlob, 'ingredient-label.jpg');
+  } else {
+    formData.append('file', {
+      uri: imageUri,
+      name: 'ingredient-label.jpg',
+      type: 'image/jpeg',
+    } as unknown as Blob);
+  }
+
+  formData.append('selected_rules', JSON.stringify(selectedRules));
+
+  const response = await fetch(`${API_BASE_URL}/scan/image`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+
+    throw new Error(
+      getErrorMessage(errorData, `Scan failed: ${response.status}`),
+    );
+  }
+
+  return response.json();
 }
