@@ -1,5 +1,6 @@
 # Virtual environment
 .venv/
+venv/
 
 # Python cache
 __pycache__/
@@ -7,15 +8,10 @@ __pycache__/
 
 # Environment variables
 .env
+.env.*
 
 # VS Code settings
 .vscode/
-# Terraform
-infra/.terraform/
-infra/terraform.tfstate
-infra/terraform.tfstate.backup
-infra/terraform.tfvars
-infra/*.tfvars
 
 # Terraform
 infra/.terraform/
@@ -23,5 +19,7 @@ infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/terraform.tfvars
 infra/*.tfvars
+
+# Local database files
 food_checker.db
 *.db
