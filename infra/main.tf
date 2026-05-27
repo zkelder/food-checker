@@ -122,3 +122,13 @@ resource "aws_instance" "backend" {
     Project = var.project_name
   }
 }
+
+resource "aws_eip" "backend" {
+  instance = aws_instance.backend.id
+  domain   = "vpc"
+
+  tags = {
+    Name    = "${var.project_name}-backend-eip"
+    Project = var.project_name
+  }
+}
