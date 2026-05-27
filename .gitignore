@@ -23,3 +23,5 @@ infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/terraform.tfvars
 infra/*.tfvars
+food_checker.db
+*.db
