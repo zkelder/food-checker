@@ -14,8 +14,9 @@ class Scan(Base):
     """
     Saved ingredient analysis scan.
 
-    For the MVP, scans are not tied to user accounts yet.
-    The selected rules act as a temporary user profile snapshot.
+    Scans include a user_id so history can be filtered per user.
+    For the current MVP, this uses a single fallback local user id.
+    Later, this will be replaced by the authenticated Supabase user id.
     """
 
     __tablename__ = "scans"
@@ -24,6 +25,13 @@ class Scan(Base):
         Integer,
         primary_key=True,
         index=True,
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        index=True,
+        default="local-mvp-user",
     )
 
     raw_text: Mapped[str] = mapped_column(
@@ -68,6 +76,7 @@ class UserProfile(Base):
         String,
         nullable=True,
         unique=True,
+        index=True,
     )
 
     selected_rules: Mapped[list[str]] = mapped_column(
