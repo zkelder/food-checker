@@ -1,3 +1,4 @@
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
@@ -55,11 +56,31 @@ function getVerdict(result: AnalyzeResponse | null) {
   };
 }
 
+async function prepareImageForUpload(uri: string) {
+  const result = await ImageManipulator.manipulateAsync(
+    uri,
+    [
+      {
+        resize: {
+          width: 1400,
+        },
+      },
+    ],
+    {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    },
+  );
+
+  return result.uri;
+}
+
 export default function ScanScreen() {
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
   const [imageUri, setImageUri] = useState('');
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [preparingImage, setPreparingImage] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -111,7 +132,21 @@ export default function ScanScreen() {
       return;
     }
 
-    setImageUri(pickerResult.assets[0].uri);
+    setPreparingImage(true);
+
+    try {
+      const preparedUri = await prepareImageForUpload(
+        pickerResult.assets[0].uri,
+      );
+      setImageUri(preparedUri);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        'Could not prepare this image. Try a different label photo.',
+      );
+    } finally {
+      setPreparingImage(false);
+    }
   }
 
   async function takePhoto() {
@@ -134,7 +169,21 @@ export default function ScanScreen() {
       return;
     }
 
-    setImageUri(pickerResult.assets[0].uri);
+    setPreparingImage(true);
+
+    try {
+      const preparedUri = await prepareImageForUpload(
+        pickerResult.assets[0].uri,
+      );
+      setImageUri(preparedUri);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        'Could not prepare this image. Try a clearer label photo.',
+      );
+    } finally {
+      setPreparingImage(false);
+    }
   }
 
   async function scanSelectedImage() {
@@ -163,6 +212,7 @@ export default function ScanScreen() {
   }
 
   const verdict = getVerdict(result);
+  const busy = scanning || preparingImage;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -202,26 +252,45 @@ export default function ScanScreen() {
           <Text style={styles.cardTitle}>Scan Ingredient Label</Text>
 
           <Text style={styles.cardText}>
-            Take a new photo or choose one from your library, then send it to
-            the FastAPI OCR endpoint.
+            Take a new photo or choose one from your library. Food Checker will
+            shrink the image for faster OCR before sending it to the backend.
           </Text>
 
           <View style={styles.actionGrid}>
-            <Pressable style={styles.secondaryButton} onPress={takePhoto}>
+            <Pressable
+              style={[styles.secondaryButton, busy && styles.disabledButton]}
+              onPress={takePhoto}
+              disabled={busy}
+            >
               <Text style={styles.secondaryButtonText}>Take Photo</Text>
             </Pressable>
 
-            <Pressable style={styles.secondaryButton} onPress={choosePhoto}>
+            <Pressable
+              style={[styles.secondaryButton, busy && styles.disabledButton]}
+              onPress={choosePhoto}
+              disabled={busy}
+            >
               <Text style={styles.secondaryButtonText}>Choose Photo</Text>
             </Pressable>
           </View>
+
+          {preparingImage ? (
+            <View style={styles.stateCard}>
+              <ActivityIndicator color="#fb923c" />
+              <Text style={styles.stateText}>
+                Preparing image for faster OCR...
+              </Text>
+            </View>
+          ) : null}
 
           {imageUri ? (
             <View style={styles.previewCard}>
               <Image source={{ uri: imageUri }} style={styles.previewImage} />
 
               <View style={styles.previewFooter}>
-                <Text style={styles.previewText}>Photo ready to scan</Text>
+                <Text style={styles.previewText}>
+                  Compressed photo ready to scan
+                </Text>
 
                 <Pressable style={styles.clearButton} onPress={clearScan}>
                   <Text style={styles.clearButtonText}>
@@ -235,10 +304,10 @@ export default function ScanScreen() {
           <Pressable
             style={[
               styles.primaryButton,
-              (!imageUri || scanning) && styles.primaryButtonDisabled,
+              (!imageUri || busy) && styles.primaryButtonDisabled,
             ]}
             onPress={scanSelectedImage}
-            disabled={!imageUri || scanning}
+            disabled={!imageUri || busy}
           >
             {scanning ? (
               <ActivityIndicator color="#ffffff" />
@@ -445,6 +514,9 @@ const styles = StyleSheet.create({
     color: '#f8fafc',
     fontWeight: '900',
   },
+  disabledButton: {
+    opacity: 0.55,
+  },
   previewCard: {
     width: '100%',
     marginBottom: 14,
@@ -524,6 +596,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   stateCard: {
+    width: '100%',
     padding: 18,
     borderRadius: 20,
     alignItems: 'center',
@@ -531,6 +604,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 14,
   },
   stateText: {
     color: '#d1d5db',

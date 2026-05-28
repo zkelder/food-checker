@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.analyzer import analyze_ingredients
+from app.config import CORS_ORIGINS
 from app.database import Base, engine, get_db
 from app.models import Scan, UserProfile
 from app.ocr import extract_text_from_image, validate_image_upload
@@ -35,7 +36,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -199,6 +200,18 @@ def scan_image(
         db.refresh(scan)
 
         return result
+
+    except RuntimeError as error:
+        if "Tesseract process timeout" in str(error):
+            raise HTTPException(
+                status_code=408,
+                detail=(
+                    "OCR timed out. Try a clearer, closer photo of the "
+                    "ingredients label."
+                ),
+            )
+
+        raise HTTPException(status_code=500, detail="OCR processing failed.")
 
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
