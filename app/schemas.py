@@ -51,6 +51,7 @@ class ScanHistoryResponse(BaseModel):
     """
 
     id: int
+    user_id: str
     raw_text: str
     selected_rules: list[str]
     result: dict[str, Any]

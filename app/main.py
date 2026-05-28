@@ -43,15 +43,23 @@ app.add_middleware(
 )
 
 
-def get_or_create_local_profile(db: Session) -> UserProfile:
+def get_current_user_id() -> str:
     """
-    Get or create the single MVP profile.
+    Return the current user id.
 
-    Later, this will be replaced by the authenticated Supabase user id.
+    For now this is still the MVP local user.
+    Later this will verify a Supabase Auth JWT and return the real user id.
+    """
+    return LOCAL_PROFILE_USER_ID
+
+
+def get_or_create_profile(db: Session, user_id: str) -> UserProfile:
+    """
+    Get or create a user profile.
     """
     profile = (
         db.query(UserProfile)
-        .filter(UserProfile.user_id == LOCAL_PROFILE_USER_ID)
+        .filter(UserProfile.user_id == user_id)
         .first()
     )
 
@@ -59,7 +67,7 @@ def get_or_create_local_profile(db: Session) -> UserProfile:
         return profile
 
     profile = UserProfile(
-        user_id=LOCAL_PROFILE_USER_ID,
+        user_id=user_id,
         selected_rules=[],
     )
 
@@ -89,22 +97,24 @@ def get_rules() -> dict:
 @app.get("/profile", response_model=UserProfileResponse)
 def get_profile(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> UserProfile:
     """
-    Return the current MVP profile.
+    Return the current user's profile.
     """
-    return get_or_create_local_profile(db)
+    return get_or_create_profile(db, user_id)
 
 
 @app.put("/profile", response_model=UserProfileResponse)
 def update_profile(
     request: UpdateUserProfileRequest,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> UserProfile:
     """
-    Update the current MVP profile preferences.
+    Update the current user's profile preferences.
     """
-    profile = get_or_create_local_profile(db)
+    profile = get_or_create_profile(db, user_id)
 
     profile.selected_rules = request.selected_rules
 
@@ -119,6 +129,7 @@ def update_profile(
 def analyze(
     request: AnalyzeRequest,
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> AnalyzeResponse:
     """
     Analyze ingredient text against selected rules and save the scan.
@@ -131,6 +142,7 @@ def analyze(
     )
 
     scan = Scan(
+        user_id=user_id,
         raw_text=cleaned_text,
         selected_rules=request.selected_rules,
         result=result,
@@ -148,6 +160,7 @@ def scan_image(
     file: UploadFile = File(...),
     selected_rules: str = Form("[]"),
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> AnalyzeResponse:
     """
     Accept an uploaded ingredient label image, extract text, analyze it
@@ -190,6 +203,7 @@ def scan_image(
         )
 
         scan = Scan(
+            user_id=user_id,
             raw_text=cleaned_text,
             selected_rules=parsed_selected_rules,
             result=result,
@@ -224,10 +238,16 @@ def scan_image(
 @app.get("/history", response_model=list[ScanHistoryResponse])
 def get_history(
     db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
 ) -> list[ScanHistoryResponse]:
     """
-    Return previously saved scans, newest first.
+    Return the current user's saved scans, newest first.
     """
-    scans = db.query(Scan).order_by(Scan.created_at.desc()).all()
+    scans = (
+        db.query(Scan)
+        .filter(Scan.user_id == user_id)
+        .order_by(Scan.created_at.desc())
+        .all()
+    )
 
     return scans
