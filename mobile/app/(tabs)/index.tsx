@@ -62,12 +62,12 @@ async function prepareImageForUpload(uri: string) {
     [
       {
         resize: {
-          width: 1400,
+          width: 1800,
         },
       },
     ],
     {
-      compress: 0.7,
+      compress: 0.85,
       format: ImageManipulator.SaveFormat.JPEG,
     },
   );
