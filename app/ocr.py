@@ -6,6 +6,7 @@ fallback OCR attempts, and cleanup of noisy OCR text.
 """
 
 import re
+import time
 
 import pytesseract
 from fastapi import UploadFile
@@ -20,6 +21,7 @@ ALLOWED_IMAGE_TYPES = {
 
 MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 MIN_OCR_TEXT_LENGTH = 8
+GOOD_OCR_SCORE = 350
 
 
 def validate_image_upload(file: UploadFile) -> None:
@@ -36,22 +38,23 @@ def validate_image_upload(file: UploadFile) -> None:
 def preprocess_image(file_path: str) -> Image.Image:
     """
     Prepare phone label photos for OCR.
+
+    Keep the image reasonably sized. Do not upscale aggressively because
+    mobile already sends a compressed scan image.
     """
     image = Image.open(file_path)
     image = ImageOps.exif_transpose(image)
 
-    image = image.convert("L")
-    image = ImageOps.autocontrast(image)
-
+    max_width = 1400
     width, height = image.size
 
-    if width < 1800:
-        scale = 1800 / width
-        image = image.resize((int(width * scale), int(height * scale)))
+    if width > max_width:
+        scale = max_width / width
+        image = image.resize((max_width, int(height * scale)))
 
-    image = image.filter(ImageFilter.SHARPEN)
-    image = image.filter(ImageFilter.SHARPEN)
+    image = image.convert("L")
     image = ImageOps.autocontrast(image)
+    image = image.filter(ImageFilter.SHARPEN)
 
     return image
 
@@ -120,30 +123,29 @@ def score_ocr_text(text: str) -> int:
         "corn",
         "natural flavor",
         "citric acid",
+        "ingredients",
     ]
 
     for keyword in ingredient_keywords:
         if keyword in text:
             score += 50
 
-    # Ingredient lists usually contain commas.
     score += text.count(",") * 10
 
-    # Penalize very noisy OCR.
     weird_chars = len(re.findall(r"[^a-z0-9,.;:()/%&+\-'\s]", text))
     score -= weird_chars * 20
 
     return score
 
 
-def run_tesseract(image: Image.Image, config: str) -> str:
+def run_tesseract(image: Image.Image, config: str, timeout: int = 10) -> str:
     """
     Run Tesseract with a specific config and return cleaned text.
     """
     raw_text = pytesseract.image_to_string(
         image,
         config=config,
-        timeout=20,
+        timeout=timeout,
     )
 
     return clean_ocr_text(raw_text)
@@ -153,27 +155,32 @@ def extract_text_from_image(file_path: str) -> str:
     """
     Extract cleaned text from an uploaded ingredient label image.
 
-    Tries multiple OCR strategies because phone label photos can vary widely.
+    Uses a fast-first strategy:
+    - Try the normal processed image first.
+    - Stop early if the result looks good.
+    - Only use fallback thresholding if needed.
     """
+    start_time = time.perf_counter()
+
     image = preprocess_image(file_path)
 
-    thresholded_150 = threshold_image(image, cutoff=150)
-    thresholded_165 = threshold_image(image, cutoff=165)
-    thresholded_185 = threshold_image(image, cutoff=185)
+    attempts: list[str] = []
 
-    configs = [
-        "--oem 3 --psm 6",
-        "--oem 3 --psm 11",
-        "--oem 3 --psm 4",
+    strategies = [
+        (image, "--oem 3 --psm 6"),
+        (threshold_image(image, cutoff=165), "--oem 3 --psm 6"),
+        (image, "--oem 3 --psm 11"),
     ]
 
-    attempts = []
+    for attempt_image, config in strategies:
+        text = run_tesseract(attempt_image, config)
+        if text:
+            attempts.append(text)
 
-    for config in configs:
-        attempts.append(run_tesseract(image, config))
-        attempts.append(run_tesseract(thresholded_150, config))
-        attempts.append(run_tesseract(thresholded_165, config))
-        attempts.append(run_tesseract(thresholded_185, config))
+            if score_ocr_text(text) >= GOOD_OCR_SCORE:
+                elapsed = time.perf_counter() - start_time
+                print(f"OCR completed early in {elapsed:.2f}s")
+                return text
 
     attempts = [text for text in attempts if text]
 
@@ -188,5 +195,8 @@ def extract_text_from_image(file_path: str) -> str:
         raise ValueError(
             "Could not read enough text from the image. Try a clearer, closer photo."
         )
+
+    elapsed = time.perf_counter() - start_time
+    print(f"OCR completed in {elapsed:.2f}s")
 
     return best_text
