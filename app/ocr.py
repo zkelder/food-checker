@@ -21,7 +21,7 @@ ALLOWED_IMAGE_TYPES = {
 
 MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 MIN_OCR_TEXT_LENGTH = 8
-GOOD_OCR_SCORE = 350
+GOOD_OCR_SCORE = 650
 
 
 def validate_image_upload(file: UploadFile) -> None:
@@ -39,13 +39,13 @@ def preprocess_image(file_path: str) -> Image.Image:
     """
     Prepare phone label photos for OCR.
 
-    Keep the image reasonably sized. Do not upscale aggressively because
-    mobile already sends a compressed scan image.
+    Keep enough resolution for dense ingredient text while avoiding giant
+    iPhone images that can make Tesseract timeout.
     """
     image = Image.open(file_path)
     image = ImageOps.exif_transpose(image)
 
-    max_width = 1400
+    max_width = 1800
     width, height = image.size
 
     if width > max_width:
@@ -102,11 +102,20 @@ def clean_ocr_text(text: str) -> str:
 
 def score_ocr_text(text: str) -> int:
     """
-    Score OCR attempts by ingredient-like usefulness, not just length.
+    Score OCR attempts by ingredient-list usefulness.
+
+    We reward coherent ingredient-list structure more than just catching
+    one or two allergen words. This helps preserve longer ingredient lists.
     """
+    if not text:
+        return 0
+
     score = len(text)
 
     ingredient_keywords = [
+        "ingredients",
+        "contains",
+        "may contain",
         "milk",
         "wheat",
         "soy",
@@ -115,7 +124,6 @@ def score_ocr_text(text: str) -> int:
         "tree nut",
         "almond",
         "cashew",
-        "contains",
         "sugar",
         "salt",
         "oil",
@@ -123,14 +131,59 @@ def score_ocr_text(text: str) -> int:
         "corn",
         "natural flavor",
         "citric acid",
-        "ingredients",
+        "lecithin",
+        "riboflavin",
+        "niacin",
+        "niacinamide",
+        "thiamin",
+        "cyanocobalamin",
+        "folic acid",
+        "calcium",
+        "potassium",
+        "monoglycerides",
+        "diglycerides",
     ]
 
     for keyword in ingredient_keywords:
         if keyword in text:
-            score += 50
+            score += 60
 
-    score += text.count(",") * 10
+    # Ingredient lists usually have comma-separated structure.
+    score += text.count(",") * 18
+    score += text.count("(") * 8
+    score += text.count(")") * 8
+
+    words = re.findall(r"[a-zA-Z]{2,}", text)
+    long_words = [word for word in words if len(word) >= 6]
+    very_short_words = [word for word in words if len(word) <= 2]
+
+    # Long chemical/ingredient words are useful signal.
+    score += len(long_words) * 12
+
+    # Too many tiny fragments usually means noisy OCR.
+    score -= len(very_short_words) * 4
+
+    # Penalize screenshot/browser/menu-like junk.
+    junk_terms = [
+        "share",
+        "save",
+        "menu",
+        "download",
+        "label maker",
+        "compliant food labels",
+        "visit",
+        "login",
+        "search",
+    ]
+
+    for term in junk_terms:
+        if term in text:
+            score -= 80
+
+    # Penalize high ratio of digits/symbol noise.
+    digit_count = len(re.findall(r"\d", text))
+    if len(text) > 0 and digit_count / len(text) > 0.18:
+        score -= 120
 
     weird_chars = len(re.findall(r"[^a-z0-9,.;:()/%&+\-'\s]", text))
     score -= weird_chars * 20
@@ -138,7 +191,37 @@ def score_ocr_text(text: str) -> int:
     return score
 
 
-def run_tesseract(image: Image.Image, config: str, timeout: int = 10) -> str:
+def is_strong_ocr_result(text: str) -> bool:
+    """
+    Decide whether an OCR result is strong enough to stop early.
+    """
+    if len(text) < 80:
+        return False
+
+    score = score_ocr_text(text)
+
+    has_structure = text.count(",") >= 3 or "contains" in text or "may contain" in text
+    has_ingredient_signal = any(
+        keyword in text
+        for keyword in [
+            "milk",
+            "wheat",
+            "soy",
+            "egg",
+            "peanut",
+            "sugar",
+            "salt",
+            "oil",
+            "flour",
+            "lecithin",
+            "citric acid",
+        ]
+    )
+
+    return score >= GOOD_OCR_SCORE and has_structure and has_ingredient_signal
+
+
+def run_tesseract(image: Image.Image, config: str, timeout: int = 12) -> str:
     """
     Run Tesseract with a specific config and return cleaned text.
     """
@@ -155,48 +238,74 @@ def extract_text_from_image(file_path: str) -> str:
     """
     Extract cleaned text from an uploaded ingredient label image.
 
-    Uses a fast-first strategy:
-    - Try the normal processed image first.
-    - Stop early if the result looks good.
-    - Only use fallback thresholding if needed.
+    Uses a balanced strategy:
+    - Try likely fastest/good OCR first.
+    - Stop early only if the result is clearly ingredient-like.
+    - Use selected fallbacks for dense, small, or high-contrast labels.
     """
     start_time = time.perf_counter()
 
     image = preprocess_image(file_path)
 
-    attempts: list[str] = []
-
     strategies = [
-        (image, "--oem 3 --psm 6"),
-        (threshold_image(image, cutoff=165), "--oem 3 --psm 6"),
-        (image, "--oem 3 --psm 11"),
+        ("normal_psm6", image, "--oem 3 --psm 6"),
+        ("threshold165_psm6", threshold_image(image, cutoff=165), "--oem 3 --psm 6"),
+        ("threshold150_psm6", threshold_image(image, cutoff=150), "--oem 3 --psm 6"),
+        ("normal_psm11", image, "--oem 3 --psm 11"),
+        ("threshold185_psm6", threshold_image(image, cutoff=185), "--oem 3 --psm 6"),
+        ("normal_psm4", image, "--oem 3 --psm 4"),
     ]
 
-    for attempt_image, config in strategies:
-        text = run_tesseract(attempt_image, config)
-        if text:
-            attempts.append(text)
+    attempts: list[tuple[str, str, int]] = []
 
-            if score_ocr_text(text) >= GOOD_OCR_SCORE:
-                elapsed = time.perf_counter() - start_time
-                print(f"OCR completed early in {elapsed:.2f}s")
-                return text
+    for strategy_name, attempt_image, config in strategies:
+        attempt_start = time.perf_counter()
 
-    attempts = [text for text in attempts if text]
+        try:
+            text = run_tesseract(attempt_image, config)
+        except RuntimeError as error:
+            elapsed = time.perf_counter() - attempt_start
+            print(f"OCR strategy {strategy_name} failed in {elapsed:.2f}s: {error}")
+            continue
+
+        elapsed = time.perf_counter() - attempt_start
+
+        if not text:
+            print(f"OCR strategy {strategy_name} returned no text in {elapsed:.2f}s")
+            continue
+
+        score = score_ocr_text(text)
+        attempts.append((strategy_name, text, score))
+
+        print(
+            f"OCR strategy {strategy_name} completed in {elapsed:.2f}s "
+            f"with score {score} and length {len(text)}"
+        )
+
+        if is_strong_ocr_result(text):
+            total_elapsed = time.perf_counter() - start_time
+            print(
+                f"OCR selected early strategy {strategy_name} "
+                f"in {total_elapsed:.2f}s"
+            )
+            return text
 
     if not attempts:
         raise ValueError(
             "Could not read text from the image. Try a clearer, closer photo."
         )
 
-    best_text = max(attempts, key=score_ocr_text)
+    best_strategy, best_text, best_score = max(attempts, key=lambda item: item[2])
 
     if len(best_text) < MIN_OCR_TEXT_LENGTH:
         raise ValueError(
             "Could not read enough text from the image. Try a clearer, closer photo."
         )
 
-    elapsed = time.perf_counter() - start_time
-    print(f"OCR completed in {elapsed:.2f}s")
+    total_elapsed = time.perf_counter() - start_time
+    print(
+        f"OCR selected best strategy {best_strategy} "
+        f"with score {best_score} in {total_elapsed:.2f}s"
+    )
 
     return best_text
