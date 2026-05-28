@@ -1,5 +1,7 @@
 import { Platform } from 'react-native';
 
+import { supabase } from '@/lib/supabase';
+
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
@@ -42,11 +44,25 @@ export type AnalyzeResponse = {
 
 export type ScanHistoryItem = {
   id: number;
+  user_id?: string;
   raw_text: string;
   selected_rules: string[];
   result: AnalyzeResponse;
   created_at: string;
 };
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  if (!token) {
+    return {};
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+}
 
 function getErrorMessage(errorData: unknown, fallback: string) {
   if (errorData && typeof errorData === 'object' && 'detail' in errorData) {
@@ -102,6 +118,10 @@ function getStatusFallback(path: string, status: number) {
     return `Scan failed: ${status}`;
   }
 
+  if (status === 401) {
+    return 'Please sign in again.';
+  }
+
   if (status >= 500) {
     return 'The server had a problem. Try again in a moment.';
   }
@@ -112,13 +132,17 @@ function getStatusFallback(path: string, status: number) {
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   let response: Response;
 
+  const authHeaders = await getAuthHeaders();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...authHeaders,
+  };
+
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options?.headers,
-      },
       ...options,
+      headers,
     });
   } catch (error) {
     console.error(error);
@@ -186,10 +210,12 @@ export async function uploadScanImage(
   }
 
   let response: Response;
+  const authHeaders = await getAuthHeaders();
 
   try {
     response = await fetch(`${API_BASE_URL}/scan/image`, {
       method: 'POST',
+      headers: authHeaders,
       body: formData,
     });
   } catch (error) {
