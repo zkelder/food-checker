@@ -62,20 +62,74 @@ function getErrorMessage(errorData: unknown, fallback: string) {
   return fallback;
 }
 
+function getNetworkErrorMessage(path: string) {
+  if (path === '/scan/image') {
+    return (
+      'Could not reach the scan server. Check your connection and try again. ' +
+      'If this keeps happening, try a closer photo of only the ingredients panel.'
+    );
+  }
+
+  if (path === '/profile') {
+    return 'Could not load preferences. Check your connection and try again.';
+  }
+
+  if (path === '/history') {
+    return 'Could not load scan history. Check your connection and try again.';
+  }
+
+  if (path === '/rules') {
+    return 'Could not load ingredient rules. Check your connection and try again.';
+  }
+
+  return 'Could not reach the server. Check your connection and try again.';
+}
+
+function getStatusFallback(path: string, status: number) {
+  if (path === '/scan/image') {
+    if (status === 408) {
+      return 'OCR timed out. Try a clearer, closer photo of the ingredients label.';
+    }
+
+    if (status === 400) {
+      return 'Could not read this image. Try a clearer photo of only the ingredients panel.';
+    }
+
+    if (status >= 500) {
+      return 'The scan server had trouble reading this image. Try a closer, clearer label photo.';
+    }
+
+    return `Scan failed: ${status}`;
+  }
+
+  if (status >= 500) {
+    return 'The server had a problem. Try again in a moment.';
+  }
+
+  return `Request failed: ${status}`;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(getNetworkErrorMessage(path));
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
 
     throw new Error(
-      getErrorMessage(errorData, `Request failed: ${response.status}`),
+      getErrorMessage(errorData, getStatusFallback(path, response.status)),
     );
   }
 
@@ -109,31 +163,48 @@ export async function uploadScanImage(
 ): Promise<AnalyzeResponse> {
   const formData = new FormData();
 
-  if (Platform.OS === 'web') {
-    const imageResponse = await fetch(imageUri);
-    const imageBlob = await imageResponse.blob();
+  try {
+    if (Platform.OS === 'web') {
+      const imageResponse = await fetch(imageUri);
+      const imageBlob = await imageResponse.blob();
 
-    formData.append('file', imageBlob, 'ingredient-label.jpg');
-  } else {
-    formData.append('file', {
-      uri: imageUri,
-      name: 'ingredient-label.jpg',
-      type: 'image/jpeg',
-    } as unknown as Blob);
+      formData.append('file', imageBlob, 'ingredient-label.jpg');
+    } else {
+      formData.append('file', {
+        uri: imageUri,
+        name: 'ingredient-label.jpg',
+        type: 'image/jpeg',
+      } as unknown as Blob);
+    }
+
+    formData.append('selected_rules', JSON.stringify(selectedRules));
+  } catch (error) {
+    console.error(error);
+    throw new Error(
+      'Could not prepare this image for upload. Try a different label photo.',
+    );
   }
 
-  formData.append('selected_rules', JSON.stringify(selectedRules));
+  let response: Response;
 
-  const response = await fetch(`${API_BASE_URL}/scan/image`, {
-    method: 'POST',
-    body: formData,
-  });
+  try {
+    response = await fetch(`${API_BASE_URL}/scan/image`, {
+      method: 'POST',
+      body: formData,
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(getNetworkErrorMessage('/scan/image'));
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
 
     throw new Error(
-      getErrorMessage(errorData, `Scan failed: ${response.status}`),
+      getErrorMessage(
+        errorData,
+        getStatusFallback('/scan/image', response.status),
+      ),
     );
   }
 
