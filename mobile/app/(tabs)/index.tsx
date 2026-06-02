@@ -2,7 +2,6 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
-import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
   ActivityIndicator,
   Image,
   Pressable,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getProfile, uploadScanImage } from '@/lib/api';
 import type { AnalyzeResponse } from '@/lib/api';
+import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
 
 function getVerdict(result: AnalyzeResponse | null) {
   if (!result || result.match_count === 0) {

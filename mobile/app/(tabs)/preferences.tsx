@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
   ActivityIndicator,
   Pressable,
   ScrollView,
@@ -12,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getProfile, getRules, updateProfile } from '@/lib/api';
 import type { IngredientRule, RulesResponse } from '@/lib/api';
+import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
 
 const COMMON_ALLERGEN_IDS = [
   'dairy',
@@ -95,7 +95,7 @@ export default function PreferencesScreen() {
   }
 
   const groupedRules = useMemo(() => {
-    const groups: Record<string, Array<IngredientRule & { id: string }>> = {};
+    const groups: Record<string, (IngredientRule & { id: string })[]> = {};
 
     Object.entries(rules).forEach(([ruleId, ruleData]) => {
       const category = ruleData.category || 'general';

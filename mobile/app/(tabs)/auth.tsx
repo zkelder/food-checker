@@ -45,6 +45,11 @@ export default function AuthScreen() {
   }
 
   async function signUp() {
+    if (!email.trim() || !password) {
+      setMessage('Enter an email and password.');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
@@ -63,6 +68,11 @@ export default function AuthScreen() {
   }
 
   async function signIn() {
+    if (!email.trim() || !password) {
+      setMessage('Enter an email and password.');
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
