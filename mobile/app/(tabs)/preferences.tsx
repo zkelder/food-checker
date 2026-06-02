@@ -14,13 +14,11 @@ import type { IngredientRule, RulesResponse } from '@/lib/api';
 import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
 
 const COMMON_ALLERGEN_IDS = [
-  'dairy',
   'milk',
   'peanut',
-  'tree_nut',
+  'tree_nuts',
   'egg',
   'soy',
-  'wheat',
   'gluten',
   'fish',
   'shellfish',
@@ -94,6 +92,14 @@ export default function PreferencesScreen() {
     saveSelectedRules(availableCommonAllergens);
   }
 
+  function restoreRecommendedDefaults() {
+    const availableDefaults = DEFAULT_SELECTED_RULES.filter(
+      (ruleId) => rules[ruleId],
+    );
+
+    saveSelectedRules(availableDefaults);
+  }
+
   const groupedRules = useMemo(() => {
     const groups: Record<string, (IngredientRule & { id: string })[]> = {};
 
@@ -164,6 +170,13 @@ export default function PreferencesScreen() {
                 onPress={selectCommonAllergens}
               >
                 <Text style={styles.secondaryButtonText}>Common Allergens</Text>
+              </Pressable>
+
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={restoreRecommendedDefaults}
+              >
+                <Text style={styles.secondaryButtonText}>Recommended</Text>
               </Pressable>
             </View>
 
@@ -314,10 +327,12 @@ const styles = StyleSheet.create({
   },
   actionsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
   },
   secondaryButton: {
     flex: 1,
+    minWidth: 120,
     minHeight: 48,
     borderRadius: 16,
     alignItems: 'center',

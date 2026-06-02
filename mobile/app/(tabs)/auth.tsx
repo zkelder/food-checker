@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import Constants from 'expo-constants';
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -9,6 +11,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import {
+  API_BASE_URL,
+  getHealth,
+  getHistory,
+  getProfile,
+} from '@/lib/api';
 import { supabase } from '@/lib/supabase';
 
 export default function AuthScreen() {
@@ -16,21 +24,36 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshingStatus, setRefreshingStatus] = useState(false);
+  const [selectedPreferenceCount, setSelectedPreferenceCount] = useState(0);
+  const [scanHistoryCount, setScanHistoryCount] = useState(0);
+  const [apiStatus, setApiStatus] = useState('Not checked');
   const [message, setMessage] = useState('');
 
-  useEffect(() => {
-    loadSession();
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user.email ?? null);
-    });
+  const loadAccountStatus = useCallback(async () => {
+    setRefreshingStatus(true);
 
-    return () => {
-      data.subscription.unsubscribe();
-    };
+    try {
+      const [profile, history, health] = await Promise.all([
+        getProfile(),
+        getHistory(),
+        getHealth(),
+      ]);
+
+      setSelectedPreferenceCount(profile.selected_rules?.length ?? 0);
+      setScanHistoryCount(history.length);
+      setApiStatus(health.status === 'ok' ? 'Online' : health.status);
+    } catch (error) {
+      console.error('Account status refresh failed:', error);
+      setApiStatus('Could not reach API');
+    } finally {
+      setRefreshingStatus(false);
+    }
   }, []);
 
-  async function loadSession() {
+  const loadSession = useCallback(async () => {
     setLoading(true);
     setMessage('');
 
@@ -41,8 +64,33 @@ export default function AuthScreen() {
     }
 
     setUserEmail(data.session?.user.email ?? null);
+
+    if (data.session) {
+      await loadAccountStatus();
+    }
+
     setLoading(false);
-  }
+  }, [loadAccountStatus]);
+
+  useEffect(() => {
+    loadSession();
+
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+
+      if (session) {
+        loadAccountStatus();
+      } else {
+        setSelectedPreferenceCount(0);
+        setScanHistoryCount(0);
+        setApiStatus('Not checked');
+      }
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, [loadAccountStatus, loadSession]);
 
   async function signUp() {
     if (!email.trim() || !password) {
@@ -110,14 +158,15 @@ export default function AuthScreen() {
       <View style={styles.page}>
         <View style={styles.heroCard}>
           <Text style={styles.eyebrow}>Account</Text>
-          <Text style={styles.title}>Sign in</Text>
+          <Text style={styles.title}>{userEmail ? 'Account' : 'Sign in'}</Text>
           <Text style={styles.subtitle}>
             Auth is powered by Supabase. Once connected, preferences and scan
             history will be tied to your account.
           </Text>
         </View>
 
-        <View style={styles.card}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.card}>
           {loading ? (
             <View style={styles.loadingRow}>
               <ActivityIndicator color="#fb923c" />
@@ -129,6 +178,65 @@ export default function AuthScreen() {
             <>
               <Text style={styles.label}>Signed in as</Text>
               <Text style={styles.signedInEmail}>{userEmail}</Text>
+
+              <View style={styles.statsGrid}>
+                <View style={styles.statCard}>
+                  <Text style={styles.statNumber}>
+                    {selectedPreferenceCount}
+                  </Text>
+                  <Text style={styles.statLabel}>Preferences</Text>
+                </View>
+
+                <View style={styles.statCard}>
+                  <Text style={styles.statNumber}>{scanHistoryCount}</Text>
+                  <Text style={styles.statLabel}>Scans</Text>
+                </View>
+              </View>
+
+              <View style={styles.statusCard}>
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>API status</Text>
+                  <Text
+                    style={[
+                      styles.statusValue,
+                      apiStatus === 'Online'
+                        ? styles.statusOnline
+                        : styles.statusWarning,
+                    ]}
+                  >
+                    {apiStatus}
+                  </Text>
+                </View>
+
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>API base URL</Text>
+                  <Text style={styles.statusValue}>{API_BASE_URL}</Text>
+                </View>
+
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>App version</Text>
+                  <Text style={styles.statusValue}>{appVersion}</Text>
+                </View>
+
+                <View style={styles.statusRow}>
+                  <Text style={styles.statusLabel}>Build</Text>
+                  <Text style={styles.statusValue}>Preview build</Text>
+                </View>
+              </View>
+
+              <Pressable
+                style={styles.secondaryButton}
+                onPress={loadAccountStatus}
+                disabled={refreshingStatus}
+              >
+                {refreshingStatus ? (
+                  <ActivityIndicator color="#ffffff" />
+                ) : (
+                  <Text style={styles.secondaryButtonText}>
+                    Refresh Account Status
+                  </Text>
+                )}
+              </Pressable>
 
               <Pressable style={styles.dangerButton} onPress={signOut}>
                 <Text style={styles.buttonText}>Sign Out</Text>
@@ -172,7 +280,8 @@ export default function AuthScreen() {
               <Text style={styles.messageText}>{message}</Text>
             </View>
           ) : null}
-        </View>
+          </View>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -187,6 +296,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 18,
     gap: 18,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   heroCard: {
     padding: 24,
@@ -276,6 +388,61 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '900',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  statCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  statNumber: {
+    color: '#ffffff',
+    fontSize: 30,
+    fontWeight: '900',
+  },
+  statLabel: {
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
+  statusCard: {
+    gap: 12,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  statusRow: {
+    gap: 4,
+  },
+  statusLabel: {
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+  statusValue: {
+    color: '#f8fafc',
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  statusOnline: {
+    color: '#86efac',
+  },
+  statusWarning: {
+    color: '#fde68a',
   },
   loadingRow: {
     flexDirection: 'row',

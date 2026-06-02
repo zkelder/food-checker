@@ -51,7 +51,20 @@ function formatDate(value: string) {
     return 'Unknown date';
   }
 
-  return date.toLocaleString();
+  return date.toLocaleDateString();
+}
+
+function formatTime(value: string) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 export default function HistoryScreen() {
@@ -104,6 +117,13 @@ export default function HistoryScreen() {
           </Text>
         </View>
 
+        <View style={styles.countCard}>
+          <Text style={styles.countNumber}>{history.length}</Text>
+          <Text style={styles.countLabel}>
+            {history.length === 1 ? 'saved scan' : 'saved scans'}
+          </Text>
+        </View>
+
         {loading ? (
           <View style={styles.stateCard}>
             <ActivityIndicator color="#fb923c" />
@@ -121,8 +141,8 @@ export default function HistoryScreen() {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No scans yet</Text>
             <Text style={styles.emptyText}>
-              Your scan history will appear here after you scan a label or
-              analyze ingredient text.
+              After your first label scan, the date, risk level, match count,
+              and summary will appear here for quick review.
             </Text>
           </View>
         ) : null}
@@ -143,6 +163,12 @@ export default function HistoryScreen() {
                     {formatDate(scan.created_at)}
                   </Text>
                 </View>
+
+                {formatTime(scan.created_at) ? (
+                  <Text style={styles.timeText}>
+                    Scanned at {formatTime(scan.created_at)}
+                  </Text>
+                ) : null}
 
                 <Text style={styles.summary}>
                   {scan.result?.summary || 'No summary available.'}
@@ -209,6 +235,28 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginTop: 12,
   },
+  countCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: 'rgba(251, 146, 60, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 146, 60, 0.22)',
+  },
+  countNumber: {
+    color: '#ffffff',
+    fontSize: 32,
+    fontWeight: '900',
+  },
+  countLabel: {
+    color: '#fed7aa',
+    fontSize: 13,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
   list: {
     gap: 14,
   },
@@ -258,6 +306,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     textAlign: 'right',
+  },
+  timeText: {
+    color: '#9ca3af',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   summary: {
     color: '#ffffff',

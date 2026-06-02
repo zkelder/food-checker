@@ -1,6 +1,7 @@
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -15,6 +16,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getProfile, uploadScanImage } from '@/lib/api';
 import type { AnalyzeResponse } from '@/lib/api';
 import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
+
+const SCAN_STATUS_MESSAGES = [
+  'Uploading image...',
+  'Reading label...',
+  'Checking selected concerns...',
+];
 
 function getVerdict(result: AnalyzeResponse | null) {
   if (!result || result.match_count === 0) {
@@ -77,12 +84,15 @@ async function prepareImageForUpload(uri: string) {
 }
 
 export default function ScanScreen() {
+  const router = useRouter();
   const [selectedRules, setSelectedRules] = useState<string[]>(DEFAULT_SELECTED_RULES);
+  const [hasSavedPreferences, setHasSavedPreferences] = useState(true);
   const [imageUri, setImageUri] = useState('');
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [preparingImage, setPreparingImage] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -95,11 +105,12 @@ export default function ScanScreen() {
 
     try {
       const profile = await getProfile();
+      setHasSavedPreferences((profile.selected_rules?.length ?? 0) > 0);
       setSelectedRules(profile.selected_rules?.length ? profile.selected_rules : DEFAULT_SELECTED_RULES);
     } catch (error) {
       console.error(error);
       setErrorMessage(
-        'Could not load scan preferences. Make sure the backend is running.',
+        'Could not load saved preferences. You can still scan with the recommended defaults.',
       );
     } finally {
       setLoadingProfile(false);
@@ -194,8 +205,14 @@ export default function ScanScreen() {
     }
 
     setScanning(true);
+    setScanStatus(SCAN_STATUS_MESSAGES[0]);
     setErrorMessage('');
     setResult(null);
+
+    const statusTimers = [
+      setTimeout(() => setScanStatus(SCAN_STATUS_MESSAGES[1]), 1200),
+      setTimeout(() => setScanStatus(SCAN_STATUS_MESSAGES[2]), 3600),
+    ];
 
     try {
       const scanResult = await uploadScanImage(imageUri, selectedRules);
@@ -205,15 +222,32 @@ export default function ScanScreen() {
       setErrorMessage(
         error instanceof Error
           ? error.message
-          : 'Could not scan this image. Try a clearer label photo.',
+          : 'We could not finish this scan. Try a clearer, closer label photo.',
       );
     } finally {
+      statusTimers.forEach(clearTimeout);
+      setScanStatus('');
       setScanning(false);
     }
   }
 
   const verdict = getVerdict(result);
   const busy = scanning || preparingImage;
+  const groupedMatches = useMemo(() => {
+    if (!result?.matches.length) {
+      return [];
+    }
+
+    const groups: Record<string, typeof result.matches> = {};
+
+    result.matches.forEach((match) => {
+      const groupKey = `${match.severity} ${match.category}`;
+      groups[groupKey] = groups[groupKey] || [];
+      groups[groupKey].push(match);
+    });
+
+    return Object.entries(groups);
+  }, [result]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -242,6 +276,27 @@ export default function ScanScreen() {
           <View style={styles.stateCard}>
             <ActivityIndicator color="#fb923c" />
             <Text style={styles.stateText}>Loading scan preferences...</Text>
+          </View>
+        ) : null}
+
+        {!loadingProfile && !hasSavedPreferences ? (
+          <View style={styles.onboardingCard}>
+            <Text style={styles.onboardingTitle}>
+              Choose your ingredient concerns before your first scan.
+            </Text>
+            <Text style={styles.onboardingText}>
+              Recommended defaults are active for now. Save your own preference
+              list to make every scan feel personal.
+            </Text>
+
+            <Pressable
+              style={styles.onboardingButton}
+              onPress={() => router.push('/preferences')}
+            >
+              <Text style={styles.onboardingButtonText}>
+                Go to Preferences
+              </Text>
+            </Pressable>
           </View>
         ) : null}
 
@@ -311,7 +366,12 @@ export default function ScanScreen() {
             disabled={!imageUri || busy}
           >
             {scanning ? (
-              <ActivityIndicator color="#ffffff" />
+              <View style={styles.scanLoadingRow}>
+                <ActivityIndicator color="#ffffff" />
+                <Text style={styles.primaryButtonText}>
+                  {scanStatus || 'Scanning...'}
+                </Text>
+              </View>
             ) : (
               <Text style={styles.primaryButtonText}>Scan Ingredients</Text>
             )}
@@ -363,30 +423,46 @@ export default function ScanScreen() {
 
             {result.matches.length > 0 ? (
               <View style={styles.matchesList}>
-                {result.matches.map((match, index) => (
-                  <View
-                    key={`${match.ingredient}-${index}`}
-                    style={styles.matchCard}
-                  >
-                    <View style={styles.matchTopline}>
-                      <Text style={styles.matchLabel}>{match.label}</Text>
-                      <Text style={styles.matchSeverity}>
-                        {match.severity}
-                      </Text>
-                    </View>
+                {groupedMatches.map(([groupName, matches]) => (
+                  <View key={groupName} style={styles.matchGroup}>
+                    <Text style={styles.matchGroupTitle}>{groupName}</Text>
 
-                    <Text style={styles.matchWarning}>
-                      {match.warning ||
-                        'This ingredient matched one of your preferences.'}
-                    </Text>
+                    {matches.map((match, index) => (
+                      <View
+                        key={`${match.ingredient}-${index}`}
+                        style={styles.matchCard}
+                      >
+                        <View style={styles.matchTopline}>
+                          <Text style={styles.matchLabel}>{match.label}</Text>
+                          <Text style={styles.matchSeverity}>
+                            {match.severity}
+                          </Text>
+                        </View>
 
-                    <Text style={styles.matchMeta}>
-                      Matched: {match.ingredient} • Category: {match.category}
-                    </Text>
+                        <Text style={styles.matchWarning}>
+                          {match.warning ||
+                            'This ingredient matched one of your preferences.'}
+                        </Text>
+
+                        <Text style={styles.matchMeta}>
+                          Matched: {match.ingredient} • Category: {match.category}
+                        </Text>
+                      </View>
+                    ))}
                   </View>
                 ))}
               </View>
-            ) : null}
+            ) : (
+              <View style={styles.emptyResultCard}>
+                <Text style={styles.emptyResultTitle}>
+                  No selected concerns found.
+                </Text>
+                <Text style={styles.emptyResultText}>
+                  This scan did not match your current preference list. Review
+                  the extracted summary and adjust preferences any time.
+                </Text>
+              </View>
+            )}
           </View>
         ) : null}
       </ScrollView>
@@ -570,6 +646,41 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '900',
   },
+  scanLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  onboardingCard: {
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: 'rgba(251, 146, 60, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 146, 60, 0.3)',
+  },
+  onboardingTitle: {
+    color: '#fed7aa',
+    fontSize: 17,
+    fontWeight: '900',
+    lineHeight: 23,
+  },
+  onboardingText: {
+    color: '#d1d5db',
+    lineHeight: 21,
+    marginTop: 8,
+  },
+  onboardingButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: '#ea580c',
+    marginTop: 14,
+  },
+  onboardingButtonText: {
+    color: '#ffffff',
+    fontWeight: '900',
+  },
   noticeCard: {
     padding: 18,
     borderRadius: 20,
@@ -698,6 +809,16 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 16,
   },
+  matchGroup: {
+    gap: 10,
+  },
+  matchGroupTitle: {
+    color: '#fdba74',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+  },
   matchCard: {
     padding: 14,
     borderRadius: 16,
@@ -732,5 +853,22 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     fontWeight: '700',
+  },
+  emptyResultCard: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.22)',
+    marginTop: 16,
+  },
+  emptyResultTitle: {
+    color: '#86efac',
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  emptyResultText: {
+    color: '#d1d5db',
+    lineHeight: 20,
   },
 });

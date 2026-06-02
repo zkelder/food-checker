@@ -51,6 +51,9 @@ export type ScanHistoryItem = {
   created_at: string;
 };
 
+export type HealthResponse = {
+  status: string;
+};
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -98,6 +101,9 @@ function getNetworkErrorMessage(path: string) {
     return 'Could not load ingredient rules. Check your connection and try again.';
   }
 
+  if (path === '/health') {
+    return 'Could not reach the API health check. Check your connection and try again.';
+  }
   return 'Could not reach the server. Check your connection and try again.';
 }
 
@@ -181,6 +187,9 @@ export function getHistory() {
   return request<ScanHistoryItem[]>('/history');
 }
 
+export function getHealth() {
+  return request<HealthResponse>('/health');
+}
 export async function uploadScanImage(
   imageUri: string,
   selectedRules: string[],
