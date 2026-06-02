@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Constants from 'expo-constants';
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,13 @@ import {
   getProfile,
 } from '@/lib/api';
 import { supabase } from '@/lib/supabase';
+import {
+  BETA_LINKS,
+  DATA_DELETION_SUBJECT,
+  FOOD_CHECKER_DISCLAIMER,
+  SUPPORT_EMAIL,
+  SUPPORT_SUBJECT,
+} from '@/constants/beta';
 
 export default function AuthScreen() {
   const [email, setEmail] = useState('');
@@ -153,6 +161,21 @@ export default function AuthScreen() {
     setLoading(false);
   }
 
+  async function openUrlOrMessage(url: string, fallbackMessage: string) {
+    if (!url) {
+      setMessage(fallbackMessage);
+      return;
+    }
+
+    await Linking.openURL(url);
+  }
+
+  async function openSupportEmail(subject: string) {
+    await Linking.openURL(
+      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`,
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.page}>
@@ -194,6 +217,8 @@ export default function AuthScreen() {
               </View>
 
               <View style={styles.statusCard}>
+                <Text style={styles.sectionTitle}>Beta diagnostics</Text>
+
                 <View style={styles.statusRow}>
                   <Text style={styles.statusLabel}>API status</Text>
                   <Text
@@ -209,7 +234,7 @@ export default function AuthScreen() {
                 </View>
 
                 <View style={styles.statusRow}>
-                  <Text style={styles.statusLabel}>API base URL</Text>
+                  <Text style={styles.statusLabel}>Endpoint</Text>
                   <Text style={styles.statusValue}>{API_BASE_URL}</Text>
                 </View>
 
@@ -220,8 +245,59 @@ export default function AuthScreen() {
 
                 <View style={styles.statusRow}>
                   <Text style={styles.statusLabel}>Build</Text>
-                  <Text style={styles.statusValue}>Preview build</Text>
+                  <Text style={styles.statusValue}>Beta</Text>
                 </View>
+              </View>
+
+              <View style={styles.disclaimerCard}>
+                <Text style={styles.sectionTitle}>Important disclaimer</Text>
+                <Text style={styles.disclaimerText}>
+                  {FOOD_CHECKER_DISCLAIMER}
+                </Text>
+              </View>
+
+              <View style={styles.linksCard}>
+                <Text style={styles.sectionTitle}>Privacy and support</Text>
+
+                <Pressable
+                  style={styles.linkButton}
+                  onPress={() =>
+                    openUrlOrMessage(
+                      BETA_LINKS.privacyPolicyUrl,
+                      'Privacy Policy link will be added before external beta release.',
+                    )
+                  }
+                >
+                  <Text style={styles.linkButtonText}>Privacy Policy</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.linkButton}
+                  onPress={() => openSupportEmail(SUPPORT_SUBJECT)}
+                >
+                  <Text style={styles.linkButtonText}>Support</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.linkButton}
+                  onPress={() =>
+                    openUrlOrMessage(
+                      BETA_LINKS.termsDisclaimerUrl,
+                      'Terms / Disclaimer link will be added before external beta release.',
+                    )
+                  }
+                >
+                  <Text style={styles.linkButtonText}>Terms / Disclaimer</Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.linkButton}
+                  onPress={() => openSupportEmail(DATA_DELETION_SUBJECT)}
+                >
+                  <Text style={styles.linkButtonText}>
+                    Request Data Deletion
+                  </Text>
+                </Pressable>
               </View>
 
               <Pressable
@@ -423,6 +499,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
+  sectionTitle: {
+    color: '#fdba74',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+  },
   statusRow: {
     gap: 4,
   },
@@ -443,6 +526,40 @@ const styles = StyleSheet.create({
   },
   statusWarning: {
     color: '#fde68a',
+  },
+  disclaimerCard: {
+    gap: 10,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.22)',
+  },
+  disclaimerText: {
+    color: '#fde68a',
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+  linksCard: {
+    gap: 10,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  linkButton: {
+    minHeight: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  linkButtonText: {
+    color: '#f8fafc',
+    fontWeight: '900',
   },
   loadingRow: {
     flexDirection: 'row',

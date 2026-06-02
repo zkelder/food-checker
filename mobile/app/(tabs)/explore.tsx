@@ -19,7 +19,7 @@ function getVerdict(scan: ScanHistoryItem) {
 
   if (matchCount === 0) {
     return {
-      label: 'SAFE',
+      label: 'NO MATCHES',
       style: styles.safeBadge,
     };
   }

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getProfile, uploadScanImage } from '@/lib/api';
 import type { AnalyzeResponse } from '@/lib/api';
+import { FOOD_CHECKER_DISCLAIMER } from '@/constants/beta';
 import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
 
 const SCAN_STATUS_MESSAGES = [
@@ -26,9 +27,9 @@ const SCAN_STATUS_MESSAGES = [
 function getVerdict(result: AnalyzeResponse | null) {
   if (!result || result.match_count === 0) {
     return {
-      label: 'SAFE',
-      title: 'Looks clear',
-      description: 'No selected preference matches were found.',
+      label: 'NO MATCHES',
+      title: 'No selected concerns found',
+      description: 'This scan did not match your current preference list.',
       badgeStyle: styles.safeBadge,
       cardStyle: styles.safeResultCard,
     };
@@ -388,6 +389,11 @@ export default function ScanScreen() {
           </View>
         ) : null}
 
+        <View style={styles.disclaimerCard}>
+          <Text style={styles.disclaimerTitle}>Important disclaimer</Text>
+          <Text style={styles.disclaimerText}>{FOOD_CHECKER_DISCLAIMER}</Text>
+        </View>
+
         {errorMessage ? (
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>{errorMessage}</Text>
@@ -694,6 +700,22 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   noticeText: {
+    color: '#d1d5db',
+    lineHeight: 21,
+  },
+  disclaimerCard: {
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.22)',
+  },
+  disclaimerTitle: {
+    color: '#fde68a',
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  disclaimerText: {
     color: '#d1d5db',
     lineHeight: 21,
   },

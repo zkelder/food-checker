@@ -5,7 +5,9 @@ Handles image validation, phone-photo preprocessing, OCR extraction,
 fallback OCR attempts, and cleanup of noisy OCR text.
 """
 
+import os
 import re
+import tempfile
 import time
 
 import pytesseract
@@ -20,6 +22,7 @@ ALLOWED_IMAGE_TYPES = {
 }
 
 MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
+UPLOAD_READ_CHUNK_SIZE_BYTES = 1024 * 1024
 MIN_OCR_TEXT_LENGTH = 8
 GOOD_OCR_SCORE = 650
 
@@ -33,6 +36,40 @@ def validate_image_upload(file: UploadFile) -> None:
 
     if file.size and file.size > MAX_IMAGE_SIZE_BYTES:
         raise ValueError("Image is too large. Please upload an image under 8 MB.")
+
+
+def save_upload_to_temp_file(file: UploadFile, suffix: str) -> str:
+    """
+    Save an uploaded image to a temp file while enforcing the size limit.
+    """
+    temp_path = None
+    bytes_written = 0
+
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            temp_path = temp_file.name
+
+            while True:
+                chunk = file.file.read(UPLOAD_READ_CHUNK_SIZE_BYTES)
+
+                if not chunk:
+                    break
+
+                bytes_written += len(chunk)
+
+                if bytes_written > MAX_IMAGE_SIZE_BYTES:
+                    raise ValueError(
+                        "Image is too large. Please upload an image under 8 MB."
+                    )
+
+                temp_file.write(chunk)
+
+        return temp_path
+    except Exception:
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+        raise
 
 
 def preprocess_image(file_path: str) -> Image.Image:

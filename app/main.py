@@ -4,7 +4,6 @@ Main FastAPI application entrypoint.
 
 import json
 import os
-import tempfile
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +14,11 @@ from app.auth import get_current_user_id
 from app.config import CORS_ORIGINS
 from app.database import Base, engine, get_db
 from app.models import Scan, UserProfile
-from app.ocr import extract_text_from_image, validate_image_upload
+from app.ocr import (
+    extract_text_from_image,
+    save_upload_to_temp_file,
+    validate_image_upload,
+)
 from app.rules import INGREDIENT_RULES
 from app.schemas import (
     AnalyzeRequest,
@@ -170,9 +173,7 @@ def scan_image(
 
         suffix = os.path.splitext(file.filename or "")[1] or ".jpg"
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(file.file.read())
-            temp_path = temp_file.name
+        temp_path = save_upload_to_temp_file(file, suffix)
 
         extracted_text = extract_text_from_image(temp_path)
 
