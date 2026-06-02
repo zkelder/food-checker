@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 from app.analyzer import analyze_ingredients
+from app.auth import get_current_user_id
 from app.config import CORS_ORIGINS
 from app.database import Base, engine, get_db
 from app.models import Scan, UserProfile
@@ -23,8 +24,6 @@ from app.schemas import (
     UpdateUserProfileRequest,
     UserProfileResponse,
 )
-
-LOCAL_PROFILE_USER_ID = "local-mvp-user"
 
 Base.metadata.create_all(bind=engine)
 
@@ -41,16 +40,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-def get_current_user_id() -> str:
-    """
-    Return the current user id.
-
-    For now this is still the MVP local user.
-    Later this will verify a Supabase Auth JWT and return the real user id.
-    """
-    return LOCAL_PROFILE_USER_ID
 
 
 def get_or_create_profile(db: Session, user_id: str) -> UserProfile:
