@@ -2,6 +2,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import {
+import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
   ActivityIndicator,
   Image,
   Pressable,
@@ -76,7 +77,7 @@ async function prepareImageForUpload(uri: string) {
 }
 
 export default function ScanScreen() {
-  const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  const [selectedRules, setSelectedRules] = useState<string[]>(DEFAULT_SELECTED_RULES);
   const [imageUri, setImageUri] = useState('');
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -94,7 +95,7 @@ export default function ScanScreen() {
 
     try {
       const profile = await getProfile();
-      setSelectedRules(profile.selected_rules || []);
+      setSelectedRules(profile.selected_rules?.length ? profile.selected_rules : DEFAULT_SELECTED_RULES);
     } catch (error) {
       console.error(error);
       setErrorMessage(

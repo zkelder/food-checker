@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
   ActivityIndicator,
   Pressable,
   ScrollView,
@@ -27,7 +28,7 @@ const COMMON_ALLERGEN_IDS = [
 
 export default function PreferencesScreen() {
   const [rules, setRules] = useState<RulesResponse>({});
-  const [selectedRules, setSelectedRules] = useState<string[]>([]);
+  const [selectedRules, setSelectedRules] = useState<string[]>(DEFAULT_SELECTED_RULES);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -47,7 +48,7 @@ export default function PreferencesScreen() {
       ]);
 
       setRules(rulesData);
-      setSelectedRules(profileData.selected_rules || []);
+      setSelectedRules(profileData.selected_rules?.length ? profileData.selected_rules : DEFAULT_SELECTED_RULES);
     } catch (error) {
       console.error(error);
       setErrorMessage(

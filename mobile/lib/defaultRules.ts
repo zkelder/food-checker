@@ -1,0 +1,16 @@
+export const DEFAULT_SELECTED_RULES = [
+  'milk',
+  'gluten',
+  'soy',
+  'peanut',
+  'tree_nuts',
+  'egg',
+  'fish',
+  'shellfish',
+  'sesame',
+  'artificial_colors',
+  'added_sugars',
+  'seed_oils',
+  'preservatives',
+  'msg_glutamates',
+];
