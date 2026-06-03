@@ -43,6 +43,7 @@ class AnalyzeResponse(BaseModel):
     summary: str
     matches: list[MatchResponse]
     match_count: int
+    ocr_warning: str | None = None
 
 
 class ScanHistoryResponse(BaseModel):

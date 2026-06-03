@@ -9,11 +9,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getProfile, uploadScanImage } from '@/lib/api';
+import { analyzeText, getProfile, uploadScanImage } from '@/lib/api';
 import type { AnalyzeResponse } from '@/lib/api';
 import { FOOD_CHECKER_DISCLAIMER } from '@/constants/beta';
 import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
@@ -93,7 +94,10 @@ export default function ScanScreen() {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [preparingImage, setPreparingImage] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [analyzingText, setAnalyzingText] = useState(false);
   const [scanStatus, setScanStatus] = useState('');
+  const [showExtractedText, setShowExtractedText] = useState(false);
+  const [extractedTextDraft, setExtractedTextDraft] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -121,6 +125,8 @@ export default function ScanScreen() {
   function clearScan() {
     setImageUri('');
     setResult(null);
+    setShowExtractedText(false);
+    setExtractedTextDraft('');
     setErrorMessage('');
   }
 
@@ -218,6 +224,10 @@ export default function ScanScreen() {
     try {
       const scanResult = await uploadScanImage(imageUri, selectedRules);
       setResult(scanResult);
+      setExtractedTextDraft(
+        scanResult.normalized_text || scanResult.input_text || '',
+      );
+      setShowExtractedText(Boolean(scanResult.ocr_warning));
     } catch (error) {
       console.error(error);
       setErrorMessage(
@@ -232,8 +242,36 @@ export default function ScanScreen() {
     }
   }
 
+  async function analyzeEditedText() {
+    const text = extractedTextDraft.trim();
+
+    if (!text) {
+      setErrorMessage('Add ingredient text before re-checking concerns.');
+      return;
+    }
+
+    setAnalyzingText(true);
+    setErrorMessage('');
+
+    try {
+      const textResult = await analyzeText(text, selectedRules);
+      setResult(textResult);
+      setExtractedTextDraft(textResult.normalized_text || text);
+      setShowExtractedText(true);
+    } catch (error) {
+      console.error(error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Could not re-check this text. Try again in a moment.',
+      );
+    } finally {
+      setAnalyzingText(false);
+    }
+  }
+
   const verdict = getVerdict(result);
-  const busy = scanning || preparingImage;
+  const busy = scanning || preparingImage || analyzingText;
   const groupedMatches = useMemo(() => {
     if (!result?.matches.length) {
       return [];
@@ -426,6 +464,66 @@ export default function ScanScreen() {
             </View>
 
             <Text style={styles.resultSummary}>{result.summary}</Text>
+
+            {result.ocr_warning ? (
+              <View style={styles.ocrWarningCard}>
+                <Text style={styles.ocrWarningTitle}>
+                  OCR may need review
+                </Text>
+                <Text style={styles.ocrWarningText}>
+                  {result.ocr_warning}
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.ocrReviewCard}>
+              <Pressable
+                style={styles.ocrReviewHeader}
+                onPress={() => setShowExtractedText(!showExtractedText)}
+              >
+                <Text style={styles.ocrReviewTitle}>
+                  Review extracted text
+                </Text>
+                <Text style={styles.ocrReviewToggle}>
+                  {showExtractedText ? 'Hide' : 'Show'}
+                </Text>
+              </Pressable>
+
+              {showExtractedText ? (
+                <>
+                  <Text style={styles.ocrReviewHelp}>
+                    If OCR missed or misread words, edit the text below and
+                    re-check selected concerns.
+                  </Text>
+
+                  <TextInput
+                    style={styles.ocrTextInput}
+                    value={extractedTextDraft}
+                    onChangeText={setExtractedTextDraft}
+                    multiline
+                    placeholder="Extracted ingredient text"
+                    placeholderTextColor="#6b7280"
+                  />
+
+                  <Pressable
+                    style={[
+                      styles.ocrAnalyzeButton,
+                      analyzingText && styles.primaryButtonDisabled,
+                    ]}
+                    onPress={analyzeEditedText}
+                    disabled={analyzingText}
+                  >
+                    {analyzingText ? (
+                      <ActivityIndicator color="#ffffff" />
+                    ) : (
+                      <Text style={styles.ocrAnalyzeButtonText}>
+                        Re-check Edited Text
+                      </Text>
+                    )}
+                  </Pressable>
+                </>
+              ) : null}
+            </View>
 
             {result.matches.length > 0 ? (
               <View style={styles.matchesList}>
@@ -875,6 +973,73 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     fontWeight: '700',
+  },
+  ocrWarningCard: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.24)',
+    marginTop: 16,
+  },
+  ocrWarningTitle: {
+    color: '#fde68a',
+    fontWeight: '900',
+    marginBottom: 6,
+  },
+  ocrWarningText: {
+    color: '#d1d5db',
+    lineHeight: 20,
+  },
+  ocrReviewCard: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginTop: 16,
+  },
+  ocrReviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  ocrReviewTitle: {
+    color: '#ffffff',
+    fontWeight: '900',
+  },
+  ocrReviewToggle: {
+    color: '#fdba74',
+    fontWeight: '900',
+  },
+  ocrReviewHelp: {
+    color: '#d1d5db',
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  ocrTextInput: {
+    minHeight: 140,
+    color: '#ffffff',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 12,
+    textAlignVertical: 'top',
+  },
+  ocrAnalyzeButton: {
+    minHeight: 48,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ea580c',
+    marginTop: 12,
+  },
+  ocrAnalyzeButtonText: {
+    color: '#ffffff',
+    fontWeight: '900',
   },
   emptyResultCard: {
     padding: 14,

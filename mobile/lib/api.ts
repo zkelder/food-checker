@@ -40,6 +40,7 @@ export type AnalyzeResponse = {
   summary: string;
   matches: MatchResponse[];
   match_count: number;
+  ocr_warning?: string | null;
 };
 
 export type ScanHistoryItem = {
@@ -110,15 +111,15 @@ function getNetworkErrorMessage(path: string) {
 function getStatusFallback(path: string, status: number) {
   if (path === '/scan/image') {
     if (status === 408) {
-      return 'OCR timed out. Try a clearer, closer photo of the ingredients label.';
+      return 'OCR timed out. Try a closer, well-lit photo with the label flat and cropped to the ingredients panel.';
     }
 
     if (status === 400) {
-      return 'Could not read this image. Try a clearer photo of only the ingredients panel.';
+      return 'Could not read this image. Try a closer photo of only the ingredients panel in good lighting.';
     }
 
     if (status >= 500) {
-      return 'The scan server had trouble reading this image. Try a closer, clearer label photo.';
+      return 'The scan server had trouble reading this image. Try a flat, well-lit label photo cropped to the ingredients panel.';
     }
 
     return `Scan failed: ${status}`;
@@ -190,6 +191,17 @@ export function getHistory() {
 export function getHealth() {
   return request<HealthResponse>('/health');
 }
+
+export function analyzeText(text: string, selectedRules: string[]) {
+  return request<AnalyzeResponse>('/analyze', {
+    method: 'POST',
+    body: JSON.stringify({
+      text,
+      selected_rules: selectedRules,
+    }),
+  });
+}
+
 export async function uploadScanImage(
   imageUri: string,
   selectedRules: string[],
@@ -214,7 +226,7 @@ export async function uploadScanImage(
   } catch (error) {
     console.error(error);
     throw new Error(
-      'Could not prepare this image for upload. Try a different label photo.',
+      'Could not prepare this image for upload. Try a closer, clearer label photo.',
     );
   }
 

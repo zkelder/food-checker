@@ -16,6 +16,7 @@ from app.database import Base, engine, get_db
 from app.models import Scan, UserProfile
 from app.ocr import (
     extract_text_from_image,
+    get_ocr_quality_warning,
     save_upload_to_temp_file,
     validate_image_upload,
 )
@@ -191,6 +192,7 @@ def scan_image(
             ingredient_text=cleaned_text,
             selected_rules=parsed_selected_rules,
         )
+        result["ocr_warning"] = get_ocr_quality_warning(cleaned_text)
 
         scan = Scan(
             user_id=user_id,

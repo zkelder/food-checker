@@ -12,7 +12,7 @@ import time
 
 import pytesseract
 from fastapi import UploadFile
-from PIL import Image, ImageFilter, ImageOps
+from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
 
 ALLOWED_IMAGE_TYPES = {
@@ -25,6 +25,7 @@ MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
 UPLOAD_READ_CHUNK_SIZE_BYTES = 1024 * 1024
 MIN_OCR_TEXT_LENGTH = 8
 GOOD_OCR_SCORE = 650
+LOW_CONFIDENCE_OCR_SCORE = 260
 
 
 def validate_image_upload(file: UploadFile) -> None:
@@ -82,16 +83,22 @@ def preprocess_image(file_path: str) -> Image.Image:
     image = Image.open(file_path)
     image = ImageOps.exif_transpose(image)
 
-    max_width = 1800
+    min_width = 1400
+    max_width = 2200
     width, height = image.size
 
-    if width > max_width:
+    if width < min_width:
+        scale = min(2.0, min_width / width)
+        image = image.resize((int(width * scale), int(height * scale)))
+    elif width > max_width:
         scale = max_width / width
         image = image.resize((max_width, int(height * scale)))
 
     image = image.convert("L")
     image = ImageOps.autocontrast(image)
-    image = image.filter(ImageFilter.SHARPEN)
+    image = ImageEnhance.Contrast(image).enhance(1.35)
+    image = ImageEnhance.Sharpness(image).enhance(1.4)
+    image = image.filter(ImageFilter.UnsharpMask(radius=1, percent=140, threshold=3))
 
     return image
 
@@ -116,6 +123,8 @@ def clean_ocr_text(text: str) -> str:
     text = text.replace("—", "-").replace("–", "-")
 
     text = re.sub(r"\bINGREDIENTS?\s*[:\-]?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bINGR[E3]D[I1]ENTS?\s*[:\-]?", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bNUTRITION FACTS\b", " ", text, flags=re.IGNORECASE)
 
     # Fix OCR splitting around hyphenated words: "RIBO- FLAVIN" -> "RIBOFLAVIN"
     text = re.sub(r"([A-Za-z])-\s+([A-Za-z])", r"\1\2", text)
@@ -130,11 +139,60 @@ def clean_ocr_text(text: str) -> str:
     text = re.sub(r"\s+([,.;:)])", r"\1", text)
     text = re.sub(r"([(:])\s+", r"\1", text)
     text = re.sub(r"\s*,\s*", ", ", text)
+    text = re.sub(r",\s*,+", ",", text)
+    text = re.sub(r"[,;]{2,}", ",", text)
 
     # Remove repeated whitespace.
     text = re.sub(r"\s+", " ", text)
 
     return text.strip().lower()
+
+
+def get_ocr_quality_warning(text: str) -> str | None:
+    """
+    Return a user-facing warning when OCR text looks incomplete or noisy.
+    """
+    normalized_text = clean_ocr_text(text)
+
+    if not normalized_text:
+        return "OCR could not read much text. Try a closer photo of only the ingredients panel."
+
+    alpha_chars = re.findall(r"[a-zA-Z]", normalized_text)
+    alpha_ratio = len(alpha_chars) / max(len(normalized_text), 1)
+    words = re.findall(r"[a-zA-Z]{2,}", normalized_text)
+    ingredient_like_terms = [
+        "contains",
+        "may contain",
+        "milk",
+        "wheat",
+        "soy",
+        "egg",
+        "peanut",
+        "sugar",
+        "salt",
+        "oil",
+        "flour",
+        "lecithin",
+        "citric acid",
+    ]
+
+    has_list_structure = normalized_text.count(",") >= 2 or ";" in normalized_text
+    has_ingredient_signal = any(term in normalized_text for term in ingredient_like_terms)
+    score = score_ocr_text(normalized_text)
+
+    if (
+        len(normalized_text) < 40
+        or len(words) < 5
+        or alpha_ratio < 0.55
+        or score < LOW_CONFIDENCE_OCR_SCORE
+        or (not has_list_structure and not has_ingredient_signal)
+    ):
+        return (
+            "OCR may be incomplete or inaccurate. Try a closer, well-lit photo "
+            "with the label flat and cropped to the ingredients panel."
+        )
+
+    return None
 
 
 def score_ocr_text(text: str) -> int:
@@ -286,11 +344,12 @@ def extract_text_from_image(file_path: str) -> str:
 
     strategies = [
         ("normal_psm6", image, "--oem 3 --psm 6"),
-        ("threshold165_psm6", threshold_image(image, cutoff=165), "--oem 3 --psm 6"),
-        ("threshold150_psm6", threshold_image(image, cutoff=150), "--oem 3 --psm 6"),
-        ("normal_psm11", image, "--oem 3 --psm 11"),
-        ("threshold185_psm6", threshold_image(image, cutoff=185), "--oem 3 --psm 6"),
         ("normal_psm4", image, "--oem 3 --psm 4"),
+        ("threshold165_psm6", threshold_image(image, cutoff=165), "--oem 3 --psm 6"),
+        ("threshold145_psm6", threshold_image(image, cutoff=145), "--oem 3 --psm 6"),
+        ("threshold190_psm6", threshold_image(image, cutoff=190), "--oem 3 --psm 6"),
+        ("normal_psm11", image, "--oem 3 --psm 11"),
+        ("normal_psm12", image, "--oem 3 --psm 12"),
     ]
 
     attempts: list[tuple[str, str, int]] = []
