@@ -18,7 +18,7 @@ import {
   getHistory,
   getProfile,
 } from '@/lib/api';
-import { supabase } from '@/lib/supabase';
+import { SUPABASE_CONFIG_ERROR, supabase } from '@/lib/supabase';
 import {
   BETA_LINKS,
   DATA_DELETION_SUBJECT,
@@ -64,19 +64,31 @@ export default function AuthScreen() {
     setLoading(true);
     setMessage('');
 
-    const { data, error } = await supabase.auth.getSession();
-
-    if (error) {
-      setMessage(error.message);
+    if (SUPABASE_CONFIG_ERROR) {
+      setMessage(SUPABASE_CONFIG_ERROR);
+      setLoading(false);
+      return;
     }
 
-    setUserEmail(data.session?.user.email ?? null);
+    try {
+      const { data, error } = await supabase.auth.getSession();
 
-    if (data.session) {
-      await loadAccountStatus();
+      if (error) {
+        setMessage(error.message);
+      }
+
+      setUserEmail(data.session?.user.email ?? null);
+
+      if (data.session) {
+        await loadAccountStatus();
+      }
+    } catch (error) {
+      console.error('Session load failed:', error);
+      setUserEmail(null);
+      setMessage('Could not load the saved session. Try signing in again.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, [loadAccountStatus]);
 
   useEffect(() => {
@@ -105,21 +117,31 @@ export default function AuthScreen() {
       return;
     }
 
+    if (SUPABASE_CONFIG_ERROR) {
+      setMessage(SUPABASE_CONFIG_ERROR);
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
-    const { error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage('Account created. Check your email if confirmation is enabled.');
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage('Account created. Check your email if confirmation is enabled.');
+      }
+    } catch (error) {
+      console.error('Sign up failed:', error);
+      setMessage('Could not create account. Check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function signIn() {
@@ -128,36 +150,51 @@ export default function AuthScreen() {
       return;
     }
 
+    if (SUPABASE_CONFIG_ERROR) {
+      setMessage(SUPABASE_CONFIG_ERROR);
+      return;
+    }
+
     setLoading(true);
     setMessage('');
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage('Signed in.');
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage('Signed in.');
+      }
+    } catch (error) {
+      console.error('Sign in failed:', error);
+      setMessage('Could not sign in. Check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function signOut() {
     setLoading(true);
     setMessage('');
 
-    const { error } = await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
 
-    if (error) {
-      setMessage(error.message);
-    } else {
-      setMessage('Signed out.');
+      if (error) {
+        setMessage(error.message);
+      } else {
+        setMessage('Signed out.');
+      }
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      setMessage('Could not sign out. Please close and reopen the app.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function openUrlOrMessage(url: string, fallbackMessage: string) {
@@ -166,7 +203,12 @@ export default function AuthScreen() {
       return;
     }
 
-    await Linking.openURL(url);
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Could not open URL:', error);
+      setMessage(fallbackMessage);
+    }
   }
 
   return (

@@ -56,8 +56,19 @@ export type HealthResponse = {
   status: string;
 };
 async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  let token: string | undefined;
+
+  try {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Could not read auth session:', error);
+    }
+
+    token = data.session?.access_token;
+  } catch (error) {
+    console.error('Could not read auth session:', error);
+  }
 
   if (!token) {
     return {};

@@ -7,12 +7,13 @@ import { Platform } from 'react-native';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl) {
-  throw new Error('Missing EXPO_PUBLIC_SUPABASE_URL');
-}
+export const SUPABASE_CONFIG_ERROR =
+  !supabaseUrl || !supabaseAnonKey
+    ? 'Missing Supabase public configuration. Check EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in the build environment.'
+    : null;
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing EXPO_PUBLIC_SUPABASE_ANON_KEY');
+if (SUPABASE_CONFIG_ERROR) {
+  console.error(SUPABASE_CONFIG_ERROR);
 }
 
 const webStorage = {
@@ -40,22 +41,41 @@ const webStorage = {
 };
 
 const secureStorage = {
-  getItem: (key: string) => SecureStore.getItemAsync(key),
+  getItem: async (key: string) => {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch (error) {
+      console.error('SecureStore getItem failed:', error);
+      return null;
+    }
+  },
   setItem: async (key: string, value: string) => {
-    await SecureStore.setItemAsync(key, value);
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch (error) {
+      console.error('SecureStore setItem failed:', error);
+    }
   },
   removeItem: async (key: string) => {
-    await SecureStore.deleteItemAsync(key);
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch (error) {
+      console.error('SecureStore removeItem failed:', error);
+    }
   },
 };
 
 const storage = Platform.OS === 'web' ? webStorage : secureStorage;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(
+  supabaseUrl ?? 'https://missing-supabase-url.invalid',
+  supabaseAnonKey ?? 'missing-supabase-anon-key',
+  {
   auth: {
     storage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
-});
+  },
+);

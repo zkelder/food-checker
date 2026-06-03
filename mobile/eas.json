@@ -8,19 +8,25 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gshoteosccfemoovochr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzaG90ZW9zY2NmZW1vb3ZvY2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzIxNDMsImV4cCI6MjA5NTE0ODE0M30.QRuh2b0L-9K1rVN6hHubd6WrkpVCBOErmid477FHiQY"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gshoteosccfemoovochr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzaG90ZW9zY2NmZW1vb3ZvY2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzIxNDMsImV4cCI6MjA5NTE0ODE0M30.QRuh2b0L-9K1rVN6hHubd6WrkpVCBOErmid477FHiQY"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://gshoteosccfemoovochr.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzaG90ZW9zY2NmZW1vb3ZvY2hyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzIxNDMsImV4cCI6MjA5NTE0ODE0M30.QRuh2b0L-9K1rVN6hHubd6WrkpVCBOErmid477FHiQY"
       }
     }
   },
