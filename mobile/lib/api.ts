@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 
 export const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL || 'http://54.159.60.186:8000';
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.foodchecker.zkelder.dev';
 
 export type IngredientRule = {
   display_name?: string;

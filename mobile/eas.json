@@ -8,19 +8,19 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://54.159.60.186:8000"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://54.159.60.186:8000"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "http://54.159.60.186:8000"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.foodchecker.zkelder.dev"
       }
     }
   },

@@ -8,7 +8,7 @@ import ResultCard from "./components/ResultCard";
 import ScanCard from "./components/ScanCard";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  import.meta.env.VITE_API_BASE_URL || "https://api.foodchecker.zkelder.dev";
 
 const SELECTED_RULES_STORAGE_KEY = "food_checker_selected_rules";
 
@@ -34,7 +34,6 @@ function App() {
   const [selectedRules, setSelectedRules] = useState(loadStoredSelectedRules);
   const [ingredientText, setIngredientText] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
 
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
@@ -42,6 +41,10 @@ function App() {
   const [activeAction, setActiveAction] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const imagePreviewUrl = useMemo(
+    () => (selectedImage ? URL.createObjectURL(selectedImage) : ""),
+    [selectedImage],
+  );
 
   useEffect(() => {
     fetchRules();
@@ -61,16 +64,12 @@ function App() {
   }, [selectedRules, profileLoaded]);
 
   useEffect(() => {
-    if (!selectedImage) {
-      setImagePreviewUrl("");
-      return;
-    }
-
-    const previewUrl = URL.createObjectURL(selectedImage);
-    setImagePreviewUrl(previewUrl);
-
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [selectedImage]);
+    return () => {
+      if (imagePreviewUrl) {
+        URL.revokeObjectURL(imagePreviewUrl);
+      }
+    };
+  }, [imagePreviewUrl]);
 
   async function fetchRules() {
     try {
@@ -176,7 +175,6 @@ function App() {
 
   function clearSelectedImage() {
     setSelectedImage(null);
-    setImagePreviewUrl("");
   }
 
   function handleSelectHistoryScan(scan) {

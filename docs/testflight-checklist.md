@@ -30,7 +30,7 @@ Food Checker is an informational ingredient-screening tool. OCR and ingredient m
 
 ## TestFlight Beta Notes Draft
 
-Food Checker helps testers scan ingredient labels and compare extracted text against selected ingredient concerns. This beta uses Supabase login and a temporary HTTP backend endpoint while HTTPS/domain setup is pending. Please test sign-in, preferences, image scanning, scan history, logout, and data deletion/support request flows.
+Food Checker helps testers scan ingredient labels and compare extracted text against selected ingredient concerns. This beta uses Supabase login and the HTTPS API at https://api.foodchecker.zkelder.dev. Please test sign-in, preferences, image scanning, scan history, logout, and data deletion/support request flows.
 
 Known beta limitation: OCR may miss or misread label text, especially on blurry, cropped, reflective, or low-light photos. Always verify against the product label.
 
@@ -41,8 +41,11 @@ Known beta limitation: OCR may miss or misread label text, especially on blurry,
 - Diagnostics: basic API health status shown in-app for beta testing.
 - Tracking: no tracking currently implemented.
 
-## Release TODOs
+## Public Beta URLs
 
-- Replace placeholder Privacy Policy and Terms / Disclaimer URLs before external TestFlight/public release.
-- Replace placeholder support email with the production support address.
-- Move backend to HTTPS/domain before public release.
+- API: https://api.foodchecker.zkelder.dev
+- Privacy: https://zkelder.dev/foodchecker/privacy.html
+- Support: https://zkelder.dev/foodchecker/support.html
+- Terms: https://zkelder.dev/foodchecker/terms.html
+
+The previous raw EC2 HTTP URL should not be used by the mobile app anymore.

@@ -23,7 +23,6 @@ import {
   BETA_LINKS,
   DATA_DELETION_SUBJECT,
   FOOD_CHECKER_DISCLAIMER,
-  SUPPORT_EMAIL,
   SUPPORT_SUBJECT,
 } from '@/constants/beta';
 
@@ -170,12 +169,6 @@ export default function AuthScreen() {
     await Linking.openURL(url);
   }
 
-  async function openSupportEmail(subject: string) {
-    await Linking.openURL(
-      `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(subject)}`,
-    );
-  }
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.page}>
@@ -264,7 +257,7 @@ export default function AuthScreen() {
                   onPress={() =>
                     openUrlOrMessage(
                       BETA_LINKS.privacyPolicyUrl,
-                      'Privacy Policy link will be added before external beta release.',
+                      'Privacy Policy link is unavailable.',
                     )
                   }
                 >
@@ -273,7 +266,12 @@ export default function AuthScreen() {
 
                 <Pressable
                   style={styles.linkButton}
-                  onPress={() => openSupportEmail(SUPPORT_SUBJECT)}
+                  onPress={() =>
+                    openUrlOrMessage(
+                      BETA_LINKS.supportUrl,
+                      `${SUPPORT_SUBJECT} link is unavailable.`,
+                    )
+                  }
                 >
                   <Text style={styles.linkButtonText}>Support</Text>
                 </Pressable>
@@ -283,7 +281,7 @@ export default function AuthScreen() {
                   onPress={() =>
                     openUrlOrMessage(
                       BETA_LINKS.termsDisclaimerUrl,
-                      'Terms / Disclaimer link will be added before external beta release.',
+                      'Terms / Disclaimer link is unavailable.',
                     )
                   }
                 >
@@ -292,7 +290,12 @@ export default function AuthScreen() {
 
                 <Pressable
                   style={styles.linkButton}
-                  onPress={() => openSupportEmail(DATA_DELETION_SUBJECT)}
+                  onPress={() =>
+                    openUrlOrMessage(
+                      BETA_LINKS.supportUrl,
+                      `${DATA_DELETION_SUBJECT} link is unavailable.`,
+                    )
+                  }
                 >
                   <Text style={styles.linkButtonText}>
                     Request Data Deletion

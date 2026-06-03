@@ -29,6 +29,9 @@ def parse_csv_env(value: str | None, default: list[str]) -> list[str]:
 CORS_ORIGINS = parse_csv_env(
     os.getenv("CORS_ORIGINS"),
     [
+        "https://zkelder.dev",
+        "https://www.zkelder.dev",
+        "https://foodchecker.zkelder.dev",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:8081",
