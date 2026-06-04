@@ -17,3 +17,15 @@ Install backend dependencies, then run the test suite:
 python -m pip install -r requirements.txt
 python -m pytest -q
 ```
+
+## Mobile checks
+
+Run the Expo app sanity checks from the mobile directory:
+
+```bash
+cd mobile
+npm ci
+npx expo config --type public
+npm run typecheck
+npm run lint
+```
