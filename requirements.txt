@@ -7,6 +7,7 @@ cryptography==46.0.3
 fastapi==0.136.1
 greenlet==3.5.1
 h11==0.16.0
+httpx==0.28.1
 idna==3.16
 iniconfig==2.3.0
 packaging==26.2

@@ -8,3 +8,12 @@
 - Terms: https://zkelder.dev/foodchecker/terms.html
 
 The previous raw EC2 HTTP URL should not be used by the mobile app anymore.
+
+## Backend tests
+
+Install backend dependencies, then run the test suite:
+
+```bash
+python -m pip install -r requirements.txt
+python -m pytest -q
+```
