@@ -25,12 +25,32 @@ const SCAN_STATUS_MESSAGES = [
   'Checking selected concerns...',
 ];
 
+const RESULT_REVIEW_COPY =
+  'Review these matches against the product label. OCR and ingredient matching can be imperfect.';
+
+function formatDisplayValue(value: string) {
+  return value.replace(/_/g, ' ');
+}
+
+function getSeverityStyle(severity: string) {
+  if (severity === 'high') {
+    return styles.severityHigh;
+  }
+
+  if (severity === 'medium') {
+    return styles.severityMedium;
+  }
+
+  return styles.severityLow;
+}
+
 function getVerdict(result: AnalyzeResponse | null) {
   if (!result || result.match_count === 0) {
     return {
       label: 'NO MATCHES',
       title: 'No selected concerns found',
-      description: 'This scan did not match your current preference list.',
+      description:
+        'No selected concerns were found in the extracted text. Always verify the ingredient label directly.',
       badgeStyle: styles.safeBadge,
       cardStyle: styles.safeResultCard,
     };
@@ -38,10 +58,9 @@ function getVerdict(result: AnalyzeResponse | null) {
 
   if (result.risk_level === 'high') {
     return {
-      label: 'AVOID',
-      title: 'Ingredients flagged',
-      description:
-        'This label contains ingredients that match high-risk preferences.',
+      label: 'REVIEW',
+      title: 'Selected concerns found',
+      description: 'Review the matched ingredients against the product label.',
       badgeStyle: styles.avoidBadge,
       cardStyle: styles.avoidResultCard,
     };
@@ -50,8 +69,8 @@ function getVerdict(result: AnalyzeResponse | null) {
   if (result.risk_level === 'medium') {
     return {
       label: 'CAUTION',
-      title: 'Ingredients flagged',
-      description: 'This label contains ingredients that may need attention.',
+      title: 'Selected concerns found',
+      description: 'Review the matched ingredients against the product label.',
       badgeStyle: styles.cautionBadge,
       cardStyle: styles.cautionResultCard,
     };
@@ -59,8 +78,8 @@ function getVerdict(result: AnalyzeResponse | null) {
 
   return {
     label: 'REVIEW',
-    title: 'Ingredients flagged',
-    description: 'This label contains lower-priority ingredient notes.',
+    title: 'Ingredient notes found',
+    description: 'Review these lower-priority notes against the product label.',
     badgeStyle: styles.reviewBadge,
     cardStyle: styles.cautionResultCard,
   };
@@ -280,7 +299,7 @@ export default function ScanScreen() {
     const groups: Record<string, typeof result.matches> = {};
 
     result.matches.forEach((match) => {
-      const groupKey = `${match.severity} ${match.category}`;
+      const groupKey = `${formatDisplayValue(match.severity)} ${formatDisplayValue(match.category)}`;
       groups[groupKey] = groups[groupKey] || [];
       groups[groupKey].push(match);
     });
@@ -464,14 +483,18 @@ export default function ScanScreen() {
             </View>
 
             <Text style={styles.resultSummary}>{result.summary}</Text>
+            <Text style={styles.resultHelperText}>{RESULT_REVIEW_COPY}</Text>
 
             {result.ocr_warning ? (
               <View style={styles.ocrWarningCard}>
                 <Text style={styles.ocrWarningTitle}>
-                  OCR may need review
+                  Scan may need review
                 </Text>
                 <Text style={styles.ocrWarningText}>
                   {result.ocr_warning}
+                </Text>
+                <Text style={styles.ocrWarningText}>
+                  Try a clearer, closer photo if results look wrong.
                 </Text>
               </View>
             ) : null}
@@ -538,19 +561,32 @@ export default function ScanScreen() {
                       >
                         <View style={styles.matchTopline}>
                           <Text style={styles.matchLabel}>{match.label}</Text>
-                          <Text style={styles.matchSeverity}>
-                            {match.severity}
+                          <Text
+                            style={[
+                              styles.matchSeverity,
+                              getSeverityStyle(match.severity),
+                            ]}
+                          >
+                            {formatDisplayValue(match.severity)}
                           </Text>
                         </View>
+
+                        {match.ingredient ? (
+                          <Text style={styles.matchIngredient}>
+                            Matched ingredient: {match.ingredient}
+                          </Text>
+                        ) : null}
 
                         <Text style={styles.matchWarning}>
                           {match.warning ||
                             'This ingredient matched one of your preferences.'}
                         </Text>
 
-                        <Text style={styles.matchMeta}>
-                          Matched: {match.ingredient} • Category: {match.category}
-                        </Text>
+                        {match.category ? (
+                          <Text style={styles.matchMeta}>
+                            Category: {formatDisplayValue(match.category)}
+                          </Text>
+                        ) : null}
                       </View>
                     ))}
                   </View>
@@ -559,11 +595,11 @@ export default function ScanScreen() {
             ) : (
               <View style={styles.emptyResultCard}>
                 <Text style={styles.emptyResultTitle}>
-                  No selected concerns found.
+                  No selected concerns were found in the extracted text.
                 </Text>
                 <Text style={styles.emptyResultText}>
-                  This scan did not match your current preference list. Review
-                  the extracted summary and adjust preferences any time.
+                  Always verify the ingredient label directly. You can review
+                  the extracted text or adjust preferences any time.
                 </Text>
               </View>
             )}
@@ -925,6 +961,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 16,
   },
+  resultHelperText: {
+    color: '#d1d5db',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginTop: 8,
+  },
   matchesList: {
     gap: 12,
     marginTop: 16,
@@ -948,6 +991,7 @@ const styles = StyleSheet.create({
   },
   matchTopline: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
     marginBottom: 8,
@@ -956,13 +1000,39 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#ffffff',
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 18,
+    lineHeight: 24,
   },
   matchSeverity: {
-    color: '#fdba74',
     fontWeight: '900',
     textTransform: 'uppercase',
     fontSize: 12,
+    lineHeight: 16,
+    overflow: 'hidden',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    maxWidth: 104,
+    textAlign: 'center',
+  },
+  severityHigh: {
+    color: '#fecaca',
+    backgroundColor: 'rgba(239, 68, 68, 0.18)',
+  },
+  severityMedium: {
+    color: '#fde68a',
+    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+  },
+  severityLow: {
+    color: '#86efac',
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+  },
+  matchIngredient: {
+    color: '#fed7aa',
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 19,
+    marginBottom: 8,
   },
   matchWarning: {
     color: '#d1d5db',
@@ -973,6 +1043,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     fontWeight: '700',
+    textTransform: 'capitalize',
   },
   ocrWarningCard: {
     padding: 14,
@@ -990,6 +1061,7 @@ const styles = StyleSheet.create({
   ocrWarningText: {
     color: '#d1d5db',
     lineHeight: 20,
+    marginTop: 4,
   },
   ocrReviewCard: {
     padding: 14,

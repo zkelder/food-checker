@@ -84,13 +84,49 @@ function getErrorMessage(errorData: unknown, fallback: string) {
     const detail = (errorData as { detail: unknown }).detail;
 
     if (typeof detail === 'string') {
-      return detail;
+      return getUserSafeErrorMessage(detail, fallback);
     }
 
     return JSON.stringify(detail);
   }
 
   return fallback;
+}
+
+function getUserSafeErrorMessage(message: string, fallback: string) {
+  const normalizedMessage = message.toLowerCase();
+
+  if (
+    normalizedMessage.includes('unsupported image type') ||
+    normalizedMessage.includes('upload jpg, png, or webp')
+  ) {
+    return 'This file type is not supported. Please choose a JPG, PNG, or WEBP label image.';
+  }
+
+  if (
+    normalizedMessage.includes('too large') ||
+    normalizedMessage.includes('under 8 mb')
+  ) {
+    return 'This image is too large. Please choose a label photo under 8 MB.';
+  }
+
+  if (normalizedMessage.includes('ocr timed out')) {
+    return 'The scan took too long to read. Try a closer, well-lit photo with the ingredients panel flat.';
+  }
+
+  if (
+    normalizedMessage.includes('could not process this image') ||
+    normalizedMessage.includes('could not read text') ||
+    normalizedMessage.includes('could not read enough text')
+  ) {
+    return 'The scan could not read enough ingredient text. Try a clearer, closer photo of the ingredients panel.';
+  }
+
+  if (normalizedMessage.includes('internal server error')) {
+    return fallback;
+  }
+
+  return message;
 }
 
 function getNetworkErrorMessage(path: string) {
@@ -122,11 +158,15 @@ function getNetworkErrorMessage(path: string) {
 function getStatusFallback(path: string, status: number) {
   if (path === '/scan/image') {
     if (status === 408) {
-      return 'OCR timed out. Try a closer, well-lit photo with the label flat and cropped to the ingredients panel.';
+      return 'The scan took too long to read. Try a closer, well-lit photo with the label flat and cropped to the ingredients panel.';
     }
 
     if (status === 400) {
       return 'Could not read this image. Try a closer photo of only the ingredients panel in good lighting.';
+    }
+
+    if (status === 413) {
+      return 'This image is too large. Please choose a label photo under 8 MB.';
     }
 
     if (status >= 500) {
