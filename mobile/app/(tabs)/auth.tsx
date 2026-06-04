@@ -211,6 +211,48 @@ export default function AuthScreen() {
     }
   }
 
+  const legalSupportSection = (
+    <View style={styles.linksCard}>
+      <Text style={styles.sectionTitle}>Legal & Support</Text>
+
+      <Pressable
+        style={styles.linkButton}
+        onPress={() =>
+          openUrlOrMessage(
+            BETA_LINKS.privacyPolicyUrl,
+            'Privacy Policy link is unavailable.',
+          )
+        }
+      >
+        <Text style={styles.linkButtonText}>Privacy Policy</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.linkButton}
+        onPress={() =>
+          openUrlOrMessage(
+            BETA_LINKS.termsDisclaimerUrl,
+            'Terms & Disclaimer link is unavailable.',
+          )
+        }
+      >
+        <Text style={styles.linkButtonText}>Terms & Disclaimer</Text>
+      </Pressable>
+
+      <Pressable
+        style={styles.linkButton}
+        onPress={() =>
+          openUrlOrMessage(
+            BETA_LINKS.supportUrl,
+            `${SUPPORT_SUBJECT} link is unavailable.`,
+          )
+        }
+      >
+        <Text style={styles.linkButtonText}>Support</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.page}>
@@ -291,59 +333,7 @@ export default function AuthScreen() {
                 </Text>
               </View>
 
-              <View style={styles.linksCard}>
-                <Text style={styles.sectionTitle}>Privacy and support</Text>
-
-                <Pressable
-                  style={styles.linkButton}
-                  onPress={() =>
-                    openUrlOrMessage(
-                      BETA_LINKS.privacyPolicyUrl,
-                      'Privacy Policy link is unavailable.',
-                    )
-                  }
-                >
-                  <Text style={styles.linkButtonText}>Privacy Policy</Text>
-                </Pressable>
-
-                <Pressable
-                  style={styles.linkButton}
-                  onPress={() =>
-                    openUrlOrMessage(
-                      BETA_LINKS.supportUrl,
-                      `${SUPPORT_SUBJECT} link is unavailable.`,
-                    )
-                  }
-                >
-                  <Text style={styles.linkButtonText}>Support</Text>
-                </Pressable>
-
-                <Pressable
-                  style={styles.linkButton}
-                  onPress={() =>
-                    openUrlOrMessage(
-                      BETA_LINKS.termsDisclaimerUrl,
-                      'Terms / Disclaimer link is unavailable.',
-                    )
-                  }
-                >
-                  <Text style={styles.linkButtonText}>Terms / Disclaimer</Text>
-                </Pressable>
-
-                <Pressable
-                  style={styles.linkButton}
-                  onPress={() =>
-                    openUrlOrMessage(
-                      BETA_LINKS.supportUrl,
-                      `${DATA_DELETION_SUBJECT} link is unavailable.`,
-                    )
-                  }
-                >
-                  <Text style={styles.linkButtonText}>
-                    Request Data Deletion
-                  </Text>
-                </Pressable>
-              </View>
+              {legalSupportSection}
 
               <Pressable
                 style={styles.secondaryButton}
@@ -395,6 +385,22 @@ export default function AuthScreen() {
               </Pressable>
             </>
           )}
+
+          {!userEmail ? legalSupportSection : null}
+
+          {userEmail ? (
+            <Pressable
+              style={styles.linkButton}
+              onPress={() =>
+                openUrlOrMessage(
+                  BETA_LINKS.supportUrl,
+                  `${DATA_DELETION_SUBJECT} link is unavailable.`,
+                )
+              }
+            >
+              <Text style={styles.linkButtonText}>Request Data Deletion</Text>
+            </Pressable>
+          ) : null}
 
           {message ? (
             <View style={styles.messageCard}>
