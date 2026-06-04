@@ -11,12 +11,26 @@ jobs:
   check:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.0.2
-        with:
-          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+    env:
+      AWS_OIDC_ROLE_ARN: ${{ vars.AWS_OIDC_ROLE_ARN }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
 
-      - name: Check caller identity
+    steps:
+      - name: Verify required variables
+        run: |
+          if [ -z "$AWS_OIDC_ROLE_ARN" ]; then
+            echo "::error::AWS_OIDC_ROLE_ARN repository variable is not set"
+            exit 1
+          fi
+
+          echo "AWS region: $AWS_REGION"
+          echo "OIDC role ARN is configured."
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v6.0.0
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify caller identity
         run: aws sts get-caller-identity
