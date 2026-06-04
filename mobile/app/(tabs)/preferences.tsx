@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppTheme } from '@/constants/theme';
 import { getProfile, getRules, updateProfile } from '@/lib/api';
 import type { IngredientRule, RulesResponse } from '@/lib/api';
 import { DEFAULT_SELECTED_RULES } from '../../lib/defaultRules';
@@ -141,7 +142,7 @@ export default function PreferencesScreen() {
 
         {loading ? (
           <View style={styles.stateCard}>
-            <ActivityIndicator color="#fb923c" />
+            <ActivityIndicator color={colors.primary} />
             <Text style={styles.stateText}>Loading preferences...</Text>
           </View>
         ) : (
@@ -182,7 +183,7 @@ export default function PreferencesScreen() {
 
             {saving ? (
               <View style={styles.savingCard}>
-                <ActivityIndicator color="#fb923c" size="small" />
+                <ActivityIndicator color={colors.primary} size="small" />
                 <Text style={styles.savingText}>Saving preferences...</Text>
               </View>
             ) : null}
@@ -262,10 +263,12 @@ export default function PreferencesScreen() {
   );
 }
 
+const { colors } = AppTheme;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
   },
   page: {
     padding: 18,
@@ -275,12 +278,12 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     borderRadius: 28,
-    backgroundColor: '#1f2937',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   eyebrow: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.2,
@@ -288,14 +291,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 38,
     fontWeight: '900',
-    letterSpacing: -1.8,
+    letterSpacing: 0,
     lineHeight: 40,
   },
   subtitle: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontSize: 16,
     lineHeight: 24,
     marginTop: 12,
@@ -308,17 +311,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   summaryNumber: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 30,
     fontWeight: '900',
   },
   summaryLabel: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -337,27 +340,27 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   secondaryButtonText: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '900',
   },
   rulesCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   selectedCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(251, 146, 60, 0.08)',
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 146, 60, 0.22)',
+    borderColor: colors.primarySoft,
   },
   categoryHeader: {
     flexDirection: 'row',
@@ -366,13 +369,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   categoryCount: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   sectionTitle: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -388,45 +391,45 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   rulePillSelected: {
-    backgroundColor: 'rgba(251, 146, 60, 0.18)',
-    borderColor: 'rgba(251, 146, 60, 0.5)',
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primaryBorder,
   },
   ruleText: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '800',
   },
   ruleTextSelected: {
-    color: '#fed7aa',
+    color: colors.primary,
   },
   selectedPill: {
     paddingVertical: 8,
     paddingHorizontal: 11,
     borderRadius: 999,
-    backgroundColor: 'rgba(251, 146, 60, 0.16)',
+    backgroundColor: colors.primarySoft,
   },
   selectedPillText: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontWeight: '800',
   },
   noticeCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: colors.warningSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.22)',
+    borderColor: colors.warningSoft,
   },
   noticeTitle: {
-    color: '#fde68a',
+    color: colors.warning,
     fontWeight: '900',
     marginBottom: 6,
   },
   noticeText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 21,
   },
   stateCard: {
@@ -434,12 +437,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   stateText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontWeight: '800',
   },
   savingCard: {
@@ -448,21 +451,21 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 12,
     borderRadius: 16,
-    backgroundColor: 'rgba(251, 146, 60, 0.08)',
+    backgroundColor: colors.primarySoft,
   },
   savingText: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontWeight: '800',
   },
   errorCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.28)',
+    borderColor: colors.dangerSoft,
   },
   errorText: {
-    color: '#fecaca',
+    color: colors.danger,
     fontWeight: '800',
   },
 });

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppTheme } from '@/constants/theme';
 import {
   API_BASE_URL,
   getHealth,
@@ -269,7 +270,7 @@ export default function AuthScreen() {
           <View style={styles.card}>
           {loading ? (
             <View style={styles.loadingRow}>
-              <ActivityIndicator color="#fb923c" />
+              <ActivityIndicator color={colors.primary} />
               <Text style={styles.loadingText}>Working...</Text>
             </View>
           ) : null}
@@ -341,7 +342,7 @@ export default function AuthScreen() {
                 disabled={refreshingStatus}
               >
                 {refreshingStatus ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={colors.text} />
                 ) : (
                   <Text style={styles.secondaryButtonText}>
                     Refresh Account Status
@@ -363,7 +364,7 @@ export default function AuthScreen() {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 placeholder="you@example.com"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={colors.textSubtle}
               />
 
               <Text style={styles.label}>Password</Text>
@@ -373,7 +374,7 @@ export default function AuthScreen() {
                 onChangeText={setPassword}
                 secureTextEntry
                 placeholder="Password"
-                placeholderTextColor="#6b7280"
+                placeholderTextColor={colors.textSubtle}
               />
 
               <Pressable style={styles.primaryButton} onPress={signIn}>
@@ -414,10 +415,12 @@ export default function AuthScreen() {
   );
 }
 
+const { colors } = AppTheme;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
   },
   page: {
     flex: 1,
@@ -430,12 +433,12 @@ const styles = StyleSheet.create({
   heroCard: {
     padding: 24,
     borderRadius: 28,
-    backgroundColor: '#1f2937',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   eyebrow: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.2,
@@ -443,13 +446,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 40,
     fontWeight: '900',
-    letterSpacing: -1.5,
+    letterSpacing: 0,
   },
   subtitle: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontSize: 16,
     lineHeight: 24,
     marginTop: 10,
@@ -457,13 +460,13 @@ const styles = StyleSheet.create({
   card: {
     padding: 20,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 146, 60, 0.28)',
+    borderColor: colors.primaryBorder,
     gap: 12,
   },
   label: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -473,17 +476,17 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 16,
     paddingHorizontal: 14,
-    color: '#ffffff',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    color: colors.text,
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   primaryButton: {
     minHeight: 54,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ea580c',
+    backgroundColor: colors.primaryStrong,
     marginTop: 8,
   },
   secondaryButton: {
@@ -491,28 +494,28 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   dangerButton: {
     minHeight: 54,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+    backgroundColor: colors.danger,
     marginTop: 12,
   },
   buttonText: {
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '900',
   },
   secondaryButtonText: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '900',
   },
   signedInEmail: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 18,
     fontWeight: '900',
   },
@@ -525,17 +528,17 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   statNumber: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 30,
     fontWeight: '900',
   },
   statLabel: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.8,
@@ -546,12 +549,12 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   sectionTitle: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.9,
@@ -561,33 +564,33 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statusLabel: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.7,
     textTransform: 'uppercase',
   },
   statusValue: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '800',
     lineHeight: 20,
   },
   statusOnline: {
-    color: '#86efac',
+    color: colors.success,
   },
   statusWarning: {
-    color: '#fde68a',
+    color: colors.warning,
   },
   disclaimerCard: {
     gap: 10,
     padding: 16,
     borderRadius: 18,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: colors.warningSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.22)',
+    borderColor: colors.warningSoft,
   },
   disclaimerText: {
-    color: '#fde68a',
+    color: colors.warning,
     fontWeight: '800',
     lineHeight: 20,
   },
@@ -595,21 +598,21 @@ const styles = StyleSheet.create({
     gap: 10,
     padding: 16,
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   linkButton: {
     minHeight: 46,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   linkButtonText: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '900',
   },
   loadingRow: {
@@ -618,18 +621,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   loadingText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontWeight: '800',
   },
   messageCard: {
     padding: 12,
     borderRadius: 16,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: colors.warningSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.22)',
+    borderColor: colors.warningSoft,
   },
   messageText: {
-    color: '#fde68a',
+    color: colors.warning,
     fontWeight: '800',
     lineHeight: 20,
   },

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppTheme } from '@/constants/theme';
 import { getHistory } from '@/lib/api';
 import type { ScanHistoryItem } from '@/lib/api';
 
@@ -126,7 +127,7 @@ export default function HistoryScreen() {
 
         {loading ? (
           <View style={styles.stateCard}>
-            <ActivityIndicator color="#fb923c" />
+            <ActivityIndicator color={colors.primary} />
             <Text style={styles.stateText}>Loading scan history...</Text>
           </View>
         ) : null}
@@ -197,10 +198,12 @@ export default function HistoryScreen() {
   );
 }
 
+const { colors } = AppTheme;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
   },
   page: {
     padding: 18,
@@ -210,12 +213,12 @@ const styles = StyleSheet.create({
   header: {
     padding: 24,
     borderRadius: 28,
-    backgroundColor: '#1f2937',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   eyebrow: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.2,
@@ -223,14 +226,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 38,
     fontWeight: '900',
-    letterSpacing: -1.8,
+    letterSpacing: 0,
     lineHeight: 40,
   },
   subtitle: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontSize: 16,
     lineHeight: 24,
     marginTop: 12,
@@ -241,17 +244,17 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(251, 146, 60, 0.08)',
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 146, 60, 0.22)',
+    borderColor: colors.primarySoft,
   },
   countNumber: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 32,
     fontWeight: '900',
   },
   countLabel: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '900',
     letterSpacing: 0.8,
@@ -263,11 +266,11 @@ const styles = StyleSheet.create({
   historyCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
     borderLeftWidth: 6,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    borderLeftColor: '#fb923c',
+    borderColor: colors.border,
+    borderLeftColor: colors.primary,
   },
   row: {
     flexDirection: 'row',
@@ -285,43 +288,43 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   safeBadge: {
-    color: '#86efac',
-    backgroundColor: 'rgba(34, 197, 94, 0.16)',
+    color: colors.success,
+    backgroundColor: colors.successSoft,
   },
   reviewBadge: {
-    color: '#fde68a',
-    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+    color: colors.warning,
+    backgroundColor: colors.warningSoft,
   },
   cautionBadge: {
-    color: '#fde68a',
-    backgroundColor: 'rgba(251, 191, 36, 0.18)',
+    color: colors.warning,
+    backgroundColor: colors.warningSoft,
   },
   avoidBadge: {
-    color: '#fecaca',
-    backgroundColor: 'rgba(239, 68, 68, 0.18)',
+    color: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
   dateText: {
     flex: 1,
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 13,
     fontWeight: '700',
     textAlign: 'right',
   },
   timeText: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 12,
     fontWeight: '800',
     marginBottom: 8,
     textTransform: 'uppercase',
   },
   summary: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '800',
     lineHeight: 23,
   },
   rawText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     marginTop: 8,
     lineHeight: 20,
   },
@@ -335,8 +338,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 9,
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    color: '#d1d5db',
+    backgroundColor: colors.cardMuted,
+    color: colors.textMuted,
     fontSize: 12,
     fontWeight: '800',
     textTransform: 'capitalize',
@@ -346,39 +349,39 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   stateText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontWeight: '800',
   },
   emptyCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   emptyTitle: {
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '900',
     marginBottom: 6,
   },
   emptyText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 21,
   },
   errorCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.28)',
+    borderColor: colors.dangerSoft,
   },
   errorText: {
-    color: '#fecaca',
+    color: colors.danger,
     fontWeight: '800',
   },
 });

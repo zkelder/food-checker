@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AppTheme } from '@/constants/theme';
 import { analyzeText, getProfile, uploadScanImage } from '@/lib/api';
 import type { AnalyzeResponse } from '@/lib/api';
 import { FOOD_CHECKER_DISCLAIMER } from '@/constants/beta';
@@ -311,8 +312,8 @@ export default function ScanScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.page}>
         <View style={styles.heroCard}>
-          <Text style={styles.eyebrow}>Scan home</Text>
-          <Text style={styles.title}>Point, capture, check.</Text>
+          <Text style={styles.eyebrow}>Food Checker</Text>
+          <Text style={styles.title}>Scan an ingredient label.</Text>
 
           <Text style={styles.subtitle}>
             Take a clear photo of the ingredients panel. Food Checker will
@@ -332,7 +333,7 @@ export default function ScanScreen() {
 
         {loadingProfile ? (
           <View style={styles.stateCard}>
-            <ActivityIndicator color="#fb923c" />
+            <ActivityIndicator color={colors.primary} />
             <Text style={styles.stateText}>Loading scan preferences...</Text>
           </View>
         ) : null}
@@ -367,7 +368,8 @@ export default function ScanScreen() {
 
           <Text style={styles.cardText}>
             Take a new photo or choose one from your library. Food Checker will
-            shrink the image for faster OCR before sending it to the backend.
+            prepare the image for OCR and compare the extracted text with your
+            selected rules.
           </Text>
 
           <View style={styles.actionGrid}>
@@ -390,7 +392,7 @@ export default function ScanScreen() {
 
           {preparingImage ? (
             <View style={styles.stateCard}>
-              <ActivityIndicator color="#fb923c" />
+              <ActivityIndicator color={colors.primary} />
               <Text style={styles.stateText}>
                 Preparing image for faster OCR...
               </Text>
@@ -425,7 +427,7 @@ export default function ScanScreen() {
           >
             {scanning ? (
               <View style={styles.scanLoadingRow}>
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={colors.text} />
                 <Text style={styles.primaryButtonText}>
                   {scanStatus || 'Scanning...'}
                 </Text>
@@ -525,7 +527,7 @@ export default function ScanScreen() {
                     onChangeText={setExtractedTextDraft}
                     multiline
                     placeholder="Extracted ingredient text"
-                    placeholderTextColor="#6b7280"
+                    placeholderTextColor={colors.textSubtle}
                   />
 
                   <Pressable
@@ -537,7 +539,7 @@ export default function ScanScreen() {
                     disabled={analyzingText}
                   >
                     {analyzingText ? (
-                      <ActivityIndicator color="#ffffff" />
+                      <ActivityIndicator color={colors.text} />
                     ) : (
                       <Text style={styles.ocrAnalyzeButtonText}>
                         Re-check Edited Text
@@ -610,10 +612,12 @@ export default function ScanScreen() {
   );
 }
 
+const { colors } = AppTheme;
+
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#111827',
+    backgroundColor: colors.background,
   },
   page: {
     padding: 18,
@@ -623,12 +627,12 @@ const styles = StyleSheet.create({
   heroCard: {
     padding: 24,
     borderRadius: 28,
-    backgroundColor: '#1f2937',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   eyebrow: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.2,
@@ -636,14 +640,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 44,
     fontWeight: '900',
-    letterSpacing: -2,
+    letterSpacing: 0,
     lineHeight: 44,
   },
   subtitle: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontSize: 16,
     lineHeight: 24,
     marginTop: 14,
@@ -657,9 +661,9 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: 'rgba(251, 146, 60, 0.12)',
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 146, 60, 0.24)',
+    borderColor: colors.primaryBorder,
   },
   preferenceCount: {
     width: 28,
@@ -667,12 +671,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     textAlign: 'center',
     textAlignVertical: 'center',
-    color: '#fed7aa',
-    backgroundColor: 'rgba(251, 146, 60, 0.22)',
+    color: colors.primary,
+    backgroundColor: colors.primarySoft,
     fontWeight: '900',
   },
   preferenceText: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
@@ -682,9 +686,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
     borderRadius: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 146, 60, 0.34)',
+    borderColor: colors.primaryBorder,
   },
   cameraCircle: {
     width: 86,
@@ -692,20 +696,20 @@ const styles = StyleSheet.create({
     borderRadius: 43,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(251, 146, 60, 0.18)',
+    backgroundColor: colors.primarySoft,
     marginBottom: 16,
   },
   cameraIcon: {
     fontSize: 38,
   },
   cardTitle: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 24,
     fontWeight: '900',
     marginBottom: 8,
   },
   cardText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
@@ -723,12 +727,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   secondaryButtonText: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '900',
   },
   disabledButton: {
@@ -739,9 +743,9 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     overflow: 'hidden',
     borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   previewImage: {
     width: '100%',
@@ -757,17 +761,17 @@ const styles = StyleSheet.create({
   },
   previewText: {
     flex: 1,
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontWeight: '800',
   },
   clearButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: colors.border,
   },
   clearButtonText: {
-    color: '#f8fafc',
+    color: colors.text,
     fontWeight: '900',
   },
   primaryButton: {
@@ -776,13 +780,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ea580c',
+    backgroundColor: colors.primaryStrong,
   },
   primaryButtonDisabled: {
     opacity: 0.55,
   },
   primaryButtonText: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 17,
     fontWeight: '900',
   },
@@ -794,18 +798,18 @@ const styles = StyleSheet.create({
   onboardingCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(251, 146, 60, 0.1)',
+    backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 146, 60, 0.3)',
+    borderColor: colors.primaryBorder,
   },
   onboardingTitle: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontSize: 17,
     fontWeight: '900',
     lineHeight: 23,
   },
   onboardingText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 21,
     marginTop: 8,
   },
@@ -814,54 +818,54 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 999,
-    backgroundColor: '#ea580c',
+    backgroundColor: colors.primaryStrong,
     marginTop: 14,
   },
   onboardingButtonText: {
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '900',
   },
   noticeCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: colors.warningSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.22)',
+    borderColor: colors.warningSoft,
   },
   noticeTitle: {
-    color: '#fde68a',
+    color: colors.warning,
     fontWeight: '900',
     marginBottom: 6,
   },
   noticeText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 21,
   },
   disclaimerCard: {
     padding: 18,
     borderRadius: 20,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: colors.warningSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.22)',
+    borderColor: colors.warningSoft,
   },
   disclaimerTitle: {
-    color: '#fde68a',
+    color: colors.warning,
     fontWeight: '900',
     marginBottom: 6,
   },
   disclaimerText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 21,
   },
   errorCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: colors.dangerSoft,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.28)',
+    borderColor: colors.dangerSoft,
   },
   errorText: {
-    color: '#fecaca',
+    color: colors.danger,
     fontWeight: '800',
   },
   stateCard: {
@@ -870,29 +874,29 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     gap: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
     marginBottom: 14,
   },
   stateText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontWeight: '800',
   },
   resultCard: {
     padding: 20,
     borderRadius: 24,
     borderWidth: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
   },
   safeResultCard: {
-    borderColor: 'rgba(34, 197, 94, 0.28)',
+    borderColor: colors.successSoft,
   },
   cautionResultCard: {
-    borderColor: 'rgba(251, 191, 36, 0.28)',
+    borderColor: colors.warningSoft,
   },
   avoidResultCard: {
-    borderColor: 'rgba(239, 68, 68, 0.32)',
+    borderColor: colors.dangerSoft,
   },
   verdictBadge: {
     alignSelf: 'flex-start',
@@ -905,29 +909,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   safeBadge: {
-    color: '#86efac',
-    backgroundColor: 'rgba(34, 197, 94, 0.16)',
+    color: colors.success,
+    backgroundColor: colors.successSoft,
   },
   cautionBadge: {
-    color: '#fde68a',
-    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+    color: colors.warning,
+    backgroundColor: colors.warningSoft,
   },
   reviewBadge: {
-    color: '#fde68a',
-    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+    color: colors.warning,
+    backgroundColor: colors.warningSoft,
   },
   avoidBadge: {
-    color: '#fecaca',
-    backgroundColor: 'rgba(239, 68, 68, 0.18)',
+    color: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
   resultTitle: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 32,
     fontWeight: '900',
-    letterSpacing: -1.4,
+    letterSpacing: 0,
   },
   resultDescription: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 22,
     marginTop: 8,
   },
@@ -940,29 +944,29 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
   },
   resultSummaryNumber: {
-    color: '#ffffff',
+    color: colors.text,
     fontSize: 24,
     fontWeight: '900',
     textTransform: 'capitalize',
   },
   resultSummaryLabel: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
     marginTop: 4,
   },
   resultSummary: {
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '800',
     lineHeight: 22,
     marginTop: 16,
   },
   resultHelperText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 20,
@@ -976,7 +980,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   matchGroupTitle: {
-    color: '#fdba74',
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '900',
     letterSpacing: 0.9,
@@ -985,9 +989,9 @@ const styles = StyleSheet.create({
   matchCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
   },
   matchTopline: {
     flexDirection: 'row',
@@ -998,7 +1002,7 @@ const styles = StyleSheet.create({
   },
   matchLabel: {
     flex: 1,
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '900',
     fontSize: 18,
     lineHeight: 24,
@@ -1016,30 +1020,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   severityHigh: {
-    color: '#fecaca',
-    backgroundColor: 'rgba(239, 68, 68, 0.18)',
+    color: colors.danger,
+    backgroundColor: colors.dangerSoft,
   },
   severityMedium: {
-    color: '#fde68a',
-    backgroundColor: 'rgba(251, 191, 36, 0.16)',
+    color: colors.warning,
+    backgroundColor: colors.warningSoft,
   },
   severityLow: {
-    color: '#86efac',
-    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+    color: colors.success,
+    backgroundColor: colors.successSoft,
   },
   matchIngredient: {
-    color: '#fed7aa',
+    color: colors.primary,
     fontSize: 13,
     fontWeight: '900',
     lineHeight: 19,
     marginBottom: 8,
   },
   matchWarning: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 20,
   },
   matchMeta: {
-    color: '#9ca3af',
+    color: colors.textSubtle,
     marginTop: 8,
     fontSize: 12,
     fontWeight: '700',
@@ -1048,27 +1052,27 @@ const styles = StyleSheet.create({
   ocrWarningCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    backgroundColor: colors.warningSoft,
     borderWidth: 1,
-    borderColor: 'rgba(251, 191, 36, 0.24)',
+    borderColor: colors.warningSoft,
     marginTop: 16,
   },
   ocrWarningTitle: {
-    color: '#fde68a',
+    color: colors.warning,
     fontWeight: '900',
     marginBottom: 6,
   },
   ocrWarningText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 20,
     marginTop: 4,
   },
   ocrReviewCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    backgroundColor: colors.cardSoft,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
     marginTop: 16,
   },
   ocrReviewHeader: {
@@ -1078,24 +1082,24 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   ocrReviewTitle: {
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '900',
   },
   ocrReviewToggle: {
-    color: '#fdba74',
+    color: colors.primary,
     fontWeight: '900',
   },
   ocrReviewHelp: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 20,
     marginTop: 10,
   },
   ocrTextInput: {
     minHeight: 140,
-    color: '#ffffff',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    color: colors.text,
+    backgroundColor: colors.cardMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: colors.border,
     borderRadius: 14,
     padding: 12,
     marginTop: 12,
@@ -1106,28 +1110,28 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ea580c',
+    backgroundColor: colors.primaryStrong,
     marginTop: 12,
   },
   ocrAnalyzeButtonText: {
-    color: '#ffffff',
+    color: colors.text,
     fontWeight: '900',
   },
   emptyResultCard: {
     padding: 14,
     borderRadius: 16,
-    backgroundColor: 'rgba(34, 197, 94, 0.08)',
+    backgroundColor: colors.successSoft,
     borderWidth: 1,
-    borderColor: 'rgba(34, 197, 94, 0.22)',
+    borderColor: colors.successSoft,
     marginTop: 16,
   },
   emptyResultTitle: {
-    color: '#86efac',
+    color: colors.success,
     fontWeight: '900',
     marginBottom: 6,
   },
   emptyResultText: {
-    color: '#d1d5db',
+    color: colors.textMuted,
     lineHeight: 20,
   },
 });
