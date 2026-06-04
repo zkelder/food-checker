@@ -37,3 +37,18 @@ The workflow uses these repository secrets:
 The deploy job SSHes to the EC2 host, resets `/home/ubuntu/food-checker` to
 `origin/main`, optionally updates a host `.venv` if present, rebuilds the Docker
 Compose backend container, and verifies `http://127.0.0.1:8000/health`.
+
+## AWS OIDC Foundation
+
+AWS OIDC validation is defined in `.github/workflows/aws-oidc-check.yml`.
+
+It is manual-only through `workflow_dispatch` and uses GitHub Actions OIDC to
+assume the IAM role created by Terraform. This avoids long-lived AWS access keys
+and provides the authentication foundation for future ECR and deploy workflows.
+
+Required repository variables:
+
+- `AWS_OIDC_ROLE_ARN`
+- `AWS_REGION` (optional; defaults to `us-east-1`)
+
+The workflow only runs `aws sts get-caller-identity` as a proof check.

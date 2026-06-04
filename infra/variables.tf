@@ -38,3 +38,13 @@ variable "availability_zone" {
   type        = string
   default     = "us-east-1a"
 }
+
+variable "github_org" {
+  description = "GitHub organization or username that owns the repository."
+  type        = string
+}
+
+variable "github_repo" {
+  description = "GitHub repository name allowed to assume the OIDC role."
+  type        = string
+}

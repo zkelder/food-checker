@@ -13,6 +13,33 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_iam_policy_document" "github_actions_oidc_assume_role" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github_actions.arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values = [
+        "repo:${var.github_org}/${var.github_repo}:ref:refs/heads/main",
+        "repo:${var.github_org}/${var.github_repo}:pull_request",
+      ]
+    }
+  }
+}
+
 data "aws_vpc" "default" {
   default = true
 }
@@ -44,6 +71,34 @@ data "aws_ami" "ubuntu_2404" {
   }
 }
 
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
+
+  client_id_list = [
+    "sts.amazonaws.com",
+  ]
+
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1b511abead59c6ce207077c0bf0e0043b1382612",
+  ]
+
+  tags = {
+    Name    = "${var.project_name}-github-actions-oidc"
+    Project = var.project_name
+  }
+}
+
+resource "aws_iam_role" "github_actions_oidc" {
+  name               = "${var.project_name}-github-actions-oidc-dev"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_oidc_assume_role.json
+
+  tags = {
+    Name    = "${var.project_name}-github-actions-oidc-dev"
+    Project = var.project_name
+  }
+}
+
 resource "aws_key_pair" "backend" {
   key_name   = "${var.project_name}-backend-key"
   public_key = file(pathexpand(var.ssh_public_key_path))
@@ -72,6 +127,22 @@ resource "aws_security_group" "backend" {
     to_port     = 8000
     protocol    = "tcp"
     cidr_blocks = [var.allowed_api_cidr]
+  }
+
+  ingress {
+    description = "HTTP web traffic"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS web traffic"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -120,6 +191,14 @@ resource "aws_instance" "backend" {
   tags = {
     Name    = "${var.project_name}-backend"
     Project = var.project_name
+  }
+
+  lifecycle {
+    # This live MVP instance should not be replaced just because Canonical
+    # publishes a newer Ubuntu AMI. OS refreshes should be planned separately.
+    # App image/container updates should move through the Docker/ECR deploy
+    # pipeline instead of recreating the EC2 host.
+    ignore_changes = [ami]
   }
 }
 

@@ -21,6 +21,7 @@ infra/terraform.tfstate
 infra/terraform.tfstate.backup
 infra/terraform.tfvars
 infra/*.tfvars
+!infra/*.tfvars.example
 
 # Local database files
 food_checker.db
