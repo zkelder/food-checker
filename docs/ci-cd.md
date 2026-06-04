@@ -52,3 +52,20 @@ Required repository variables:
 - `AWS_REGION` (optional; defaults to `us-east-1`)
 
 The workflow only runs `aws sts get-caller-identity` as a proof check.
+
+## Backend Image
+
+Backend image publishing is defined in `.github/workflows/backend-image.yml`.
+
+It is manual-only through `workflow_dispatch`. The workflow assumes the AWS OIDC
+role, logs in to Amazon ECR, builds the backend Docker image from the repository
+root `Dockerfile`, and pushes both the commit SHA tag and `latest`.
+
+Required repository variables:
+
+- `AWS_OIDC_ROLE_ARN`
+- `AWS_REGION` (optional; defaults to `us-east-1`)
+- `ECR_REPOSITORY_URL`
+
+This workflow only publishes the image to ECR. Deploying that image to EC2 or
+ECS is a future step.

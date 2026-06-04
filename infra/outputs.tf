@@ -22,3 +22,13 @@ output "github_actions_oidc_provider_arn" {
   description = "IAM OIDC provider ARN for GitHub Actions."
   value       = aws_iam_openid_connect_provider.github_actions.arn
 }
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for the backend API image."
+  value       = aws_ecr_repository.backend_api.repository_url
+}
+
+output "ecr_repository_name" {
+  description = "ECR repository name for the backend API image."
+  value       = aws_ecr_repository.backend_api.name
+}

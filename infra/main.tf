@@ -40,6 +40,28 @@ data "aws_iam_policy_document" "github_actions_oidc_assume_role" {
   }
 }
 
+data "aws_iam_policy_document" "github_actions_ecr_push" {
+  statement {
+    sid       = "EcrLogin"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "PushBackendImage"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeRepositories",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [aws_ecr_repository.backend_api.arn]
+  }
+}
+
 data "aws_vpc" "default" {
   default = true
 }
@@ -97,6 +119,47 @@ resource "aws_iam_role" "github_actions_oidc" {
     Name    = "${var.project_name}-github-actions-oidc-dev"
     Project = var.project_name
   }
+}
+
+resource "aws_iam_role_policy" "github_actions_ecr_push" {
+  name   = "${var.project_name}-github-actions-ecr-push"
+  role   = aws_iam_role.github_actions_oidc.id
+  policy = data.aws_iam_policy_document.github_actions_ecr_push.json
+}
+
+resource "aws_ecr_repository" "backend_api" {
+  name                 = "${var.project_name}-api"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+
+  tags = {
+    Name    = "${var.project_name}-api"
+    Project = var.project_name
+  }
+}
+
+resource "aws_ecr_lifecycle_policy" "backend_api" {
+  repository = aws_ecr_repository.backend_api.name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Keep the most recent 30 backend images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 30
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_key_pair" "backend" {
