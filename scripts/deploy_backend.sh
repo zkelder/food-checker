@@ -17,7 +17,8 @@ echo "Pulling latest code..."
 git pull
 
 echo "Rebuilding backend container..."
-docker compose down
+docker compose down --remove-orphans
+docker rm -f food-checker-api 2>/dev/null || true
 docker compose up -d --build
 
 echo "Checking container status..."
