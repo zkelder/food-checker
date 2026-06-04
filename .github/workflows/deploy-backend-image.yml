@@ -62,6 +62,7 @@ jobs:
           script = "\n".join(
               [
                   "set -euo pipefail",
+                  "export HOME=/root",
                   "cd /home/ubuntu/food-checker",
                   "(git config --global --get-all safe.directory || true) | grep -Fx /home/ubuntu/food-checker >/dev/null || git config --global --add safe.directory /home/ubuntu/food-checker",
                   "git pull",
