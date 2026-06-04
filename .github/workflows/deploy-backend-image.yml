@@ -63,6 +63,7 @@ jobs:
               [
                   "set -euo pipefail",
                   "cd /home/ubuntu/food-checker",
+                  "(git config --global --get-all safe.directory || true) | grep -Fx /home/ubuntu/food-checker >/dev/null || git config --global --add safe.directory /home/ubuntu/food-checker",
                   "git pull",
                   f"aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin {registry_url}",
                   f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml pull",

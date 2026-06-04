@@ -12,17 +12,21 @@
     path: "{{ app_dir }}/.git"
   register: app_git_dir
 
-- name: Check existing git safe.directory values
+- name: Check existing git safe.directory values for app user and root
   ansible.builtin.command: git config --global --get-all safe.directory
-  become_user: "{{ app_user }}"
-  register: git_safe_directories
+  become_user: "{{ item }}"
+  register: git_safe_directory_checks
   changed_when: false
   failed_when: false
+  loop:
+    - "{{ app_user }}"
+    - root
 
-- name: Configure git safe.directory for app checkout
+- name: Configure git safe.directory for app user and root
   ansible.builtin.command: git config --global --add safe.directory "{{ app_dir }}"
-  become_user: "{{ app_user }}"
-  when: app_dir not in (git_safe_directories.stdout_lines | default([]))
+  become_user: "{{ item.item }}"
+  loop: "{{ git_safe_directory_checks.results }}"
+  when: app_dir not in (item.stdout_lines | default([]))
 
 - name: Check production compose file when repo exists
   ansible.builtin.stat:
