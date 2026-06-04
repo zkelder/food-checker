@@ -1,32 +1,67 @@
 # Food Checker
 
-## Public Beta URLs
+Food Checker is a mobile-first ingredient scanning app that helps users review
+ingredient labels for potential allergens, dietary conflicts, and additive
+concerns. It is an informational screening tool, not a medical diagnosis tool.
+
+## Status
+
+- MVP / public beta style project.
+- Backend CI and mobile CI are in place under `.github/workflows/`.
+- TestFlight / EAS mobile builds are configured but still run manually.
+- Production hardening is incremental; this repo does not yet include automated deployment.
+
+## Live URLs
 
 - API: https://api.foodchecker.zkelder.dev
 - Privacy: https://zkelder.dev/foodchecker/privacy.html
 - Support: https://zkelder.dev/foodchecker/support.html
 - Terms: https://zkelder.dev/foodchecker/terms.html
 
-The previous raw EC2 HTTP URL should not be used by the mobile app anymore.
+## What It Does
 
-## Backend tests
+- Scans ingredient label images with OCR.
+- Analyzes ingredient text against ingredient screening rules.
+- Highlights potential allergens, dietary conflicts, and additive concerns.
+- Saves scan history and user profile data where supported.
+- Shows OCR quality warnings when extracted text may be incomplete or noisy.
 
-Install backend dependencies, then run the test suite:
+## Tech Stack
+
+- FastAPI / Python
+- Expo / React Native
+- Supabase
+- SQLAlchemy with PostgreSQL in deployed environments and SQLite for local/test defaults
+- Tesseract OCR / `pytesseract`
+- GitHub Actions
+- EAS for manual mobile builds
+
+## Architecture Overview
+
+The Expo mobile app talks to the FastAPI API at
+`https://api.foodchecker.zkelder.dev`. The API handles image upload validation,
+OCR, ingredient analysis, user profile data, and scan history. Supabase supports
+authentication and deployed data storage. Public privacy, support, and terms
+pages are hosted under `zkelder.dev`.
+
+## Backend Local Development
 
 ```bash
+python -m venv .venv
+source .venv/bin/activate
 python -m pip install -r requirements.txt
 python -m pytest -q
+uvicorn app.main:app --reload
 ```
 
-## API observability
+In another terminal:
 
-The FastAPI backend exposes `GET /version` for public service metadata. Every
-response includes an `X-Request-ID` header; clients may send one or let the API
-generate it for request tracing.
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/version
+```
 
-## Mobile checks
-
-Run the Expo app sanity checks from the mobile directory:
+## Mobile Local Development
 
 ```bash
 cd mobile
@@ -34,4 +69,44 @@ npm ci
 npx expo config --type public
 npm run typecheck
 npm run lint
+npm start
 ```
+
+## CI Checks
+
+- Backend CI runs dependency install, a backend import check, and `python -m pytest -q`.
+- Mobile CI runs Expo config validation, TypeScript typecheck, and lint.
+- Workflows live under `.github/workflows/`.
+
+## API Observability
+
+- `GET /health` returns a basic API health status.
+- `GET /version` returns public service metadata.
+- Every API response includes an `X-Request-ID` header.
+- Clients may send `X-Request-ID` to correlate client reports with backend logs.
+- Backend logging should avoid request bodies, full ingredient text, images, auth tokens, and secrets.
+
+## Environment Variables
+
+Do not commit secrets or real production values.
+
+- `DATABASE_URL`: backend database connection string.
+- `CORS_ORIGINS`: comma-separated allowed browser origins.
+- `APP_VERSION`: public API version metadata.
+- `APP_ENVIRONMENT`: public API environment metadata.
+- `MAX_IMAGE_UPLOAD_BYTES`: maximum accepted image upload size for OCR.
+- `SUPABASE_URL`: backend Supabase project URL for JWT verification.
+- `EXPO_PUBLIC_API_BASE_URL`: mobile API base URL.
+- `EXPO_PUBLIC_SUPABASE_URL`: mobile Supabase project URL.
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`: mobile Supabase anon key.
+
+## Documentation
+
+- [Production runbook](docs/production-runbook.md)
+- [TestFlight checklist](docs/testflight-checklist.md)
+
+## Disclaimer
+
+Food Checker is an informational tool. OCR and ingredient matching can be
+imperfect. Users should verify labels directly and consult appropriate
+professionals for medical, allergy, or dietary decisions.
