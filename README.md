@@ -18,6 +18,12 @@ python -m pip install -r requirements.txt
 python -m pytest -q
 ```
 
+## API observability
+
+The FastAPI backend exposes `GET /version` for public service metadata. Every
+response includes an `X-Request-ID` header; clients may send one or let the API
+generate it for request tracing.
+
 ## Mobile checks
 
 Run the Expo app sanity checks from the mobile directory:

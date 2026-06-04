@@ -2,19 +2,25 @@
 Main FastAPI application entrypoint.
 """
 
+import logging
 import json
 import os
+import time
+import uuid
+from contextvars import ContextVar
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.analyzer import analyze_ingredients
 from app.auth import get_current_user_id
-from app.config import CORS_ORIGINS
+from app.config import APP_ENVIRONMENT, APP_NAME, APP_VERSION, CORS_ORIGINS
 from app.database import Base, engine, get_db
 from app.models import Scan, UserProfile
 from app.ocr import (
+    UploadTooLargeError,
     extract_text_from_image,
     get_ocr_quality_warning,
     save_upload_to_temp_file,
@@ -29,11 +35,17 @@ from app.schemas import (
     UserProfileResponse,
 )
 
+logger = logging.getLogger("food_checker.api")
+request_id_context: ContextVar[str | None] = ContextVar(
+    "request_id",
+    default=None,
+)
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="Food Checker API",
-    version="0.1.0",
+    title=APP_NAME,
+    version=APP_VERSION,
     description="Ingredient analysis API for allergy and dietary filtering.",
 )
 
@@ -44,6 +56,50 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def get_request_id() -> str | None:
+    """
+    Return the current request id, when one is active.
+    """
+    return request_id_context.get()
+
+
+@app.middleware("http")
+async def request_observability_middleware(request: Request, call_next):
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    token = request_id_context.set(request_id)
+    start_time = time.perf_counter()
+    status_code = 500
+
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+    except Exception:
+        logger.exception(
+            "Unhandled request error method=%s path=%s request_id=%s",
+            request.method,
+            request.url.path,
+            request_id,
+        )
+        response = JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error."},
+        )
+    finally:
+        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        logger.info(
+            "request method=%s path=%s status_code=%s duration_ms=%.2f request_id=%s",
+            request.method,
+            request.url.path,
+            status_code,
+            duration_ms,
+            request_id,
+        )
+        request_id_context.reset(token)
+
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 def get_or_create_profile(db: Session, user_id: str) -> UserProfile:
@@ -77,6 +133,18 @@ def health_check() -> dict:
     Simple health check endpoint.
     """
     return {"status": "ok"}
+
+
+@app.get("/version")
+def version() -> dict:
+    """
+    Return non-secret service version metadata.
+    """
+    return {
+        "app": APP_NAME,
+        "version": APP_VERSION,
+        "environment": APP_ENVIRONMENT,
+    }
 
 
 @app.get("/rules")
@@ -176,7 +244,28 @@ def scan_image(
 
         temp_path = save_upload_to_temp_file(file, suffix)
 
-        extracted_text = extract_text_from_image(temp_path)
+        try:
+            extracted_text = extract_text_from_image(temp_path)
+        except ValueError as error:
+            logger.warning(
+                "OCR rejected upload request_id=%s error=%s",
+                get_request_id(),
+                error,
+            )
+            raise HTTPException(status_code=400, detail=str(error))
+        except OSError as error:
+            logger.warning(
+                "OCR could not decode image request_id=%s error=%s",
+                get_request_id(),
+                error,
+            )
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Could not process this image. Please upload a valid JPG, "
+                    "PNG, or WEBP image."
+                ),
+            )
 
         cleaned_text = (
             extracted_text.replace("\n", " ")
@@ -209,6 +298,11 @@ def scan_image(
 
     except RuntimeError as error:
         if "Tesseract process timeout" in str(error):
+            logger.warning(
+                "OCR timed out request_id=%s error=%s",
+                get_request_id(),
+                error,
+            )
             raise HTTPException(
                 status_code=408,
                 detail=(
@@ -217,7 +311,14 @@ def scan_image(
                 ),
             )
 
+        logger.exception(
+            "OCR processing failed request_id=%s",
+            get_request_id(),
+        )
         raise HTTPException(status_code=500, detail="OCR processing failed.")
+
+    except UploadTooLargeError as error:
+        raise HTTPException(status_code=413, detail=str(error))
 
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))

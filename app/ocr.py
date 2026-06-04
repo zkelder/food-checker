@@ -14,6 +14,8 @@ import pytesseract
 from fastapi import UploadFile
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 
+from app.config import MAX_IMAGE_UPLOAD_BYTES
+
 
 ALLOWED_IMAGE_TYPES = {
     "image/jpeg",
@@ -21,22 +23,39 @@ ALLOWED_IMAGE_TYPES = {
     "image/webp",
 }
 
-MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024
+MAX_IMAGE_SIZE_BYTES = MAX_IMAGE_UPLOAD_BYTES
 UPLOAD_READ_CHUNK_SIZE_BYTES = 1024 * 1024
 MIN_OCR_TEXT_LENGTH = 8
 GOOD_OCR_SCORE = 650
 LOW_CONFIDENCE_OCR_SCORE = 260
 
 
+class UploadTooLargeError(ValueError):
+    """
+    Raised when an uploaded image exceeds the configured size limit.
+    """
+
+
+def get_upload_size_message() -> str:
+    max_size_mb = MAX_IMAGE_SIZE_BYTES // (1024 * 1024)
+
+    if max_size_mb > 0:
+        return f"Image is too large. Please upload an image under {max_size_mb} MB."
+
+    return "Image is too large. Please upload a smaller image."
+
+
 def validate_image_upload(file: UploadFile) -> None:
     """
     Validate that the uploaded file is an image type and size we support.
     """
-    if file.content_type not in ALLOWED_IMAGE_TYPES:
+    content_type = (file.content_type or "").split(";", 1)[0].strip().lower()
+
+    if content_type not in ALLOWED_IMAGE_TYPES:
         raise ValueError("Unsupported image type. Please upload JPG, PNG, or WEBP.")
 
     if file.size and file.size > MAX_IMAGE_SIZE_BYTES:
-        raise ValueError("Image is too large. Please upload an image under 8 MB.")
+        raise UploadTooLargeError(get_upload_size_message())
 
 
 def save_upload_to_temp_file(file: UploadFile, suffix: str) -> str:
@@ -59,9 +78,7 @@ def save_upload_to_temp_file(file: UploadFile, suffix: str) -> str:
                 bytes_written += len(chunk)
 
                 if bytes_written > MAX_IMAGE_SIZE_BYTES:
-                    raise ValueError(
-                        "Image is too large. Please upload an image under 8 MB."
-                    )
+                    raise UploadTooLargeError(get_upload_size_message())
 
                 temp_file.write(chunk)
 
