@@ -8,6 +8,12 @@
     "scheme": "foodchecker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/12b42e16-46cb-402b-89de-844fafa0c946"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zkelder.foodchecker",

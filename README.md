@@ -92,6 +92,7 @@ npm start
 ## Documentation
 
 - [Production runbook](docs/production-runbook.md)
+- [Mobile release pipeline](docs/mobile-release-pipeline.md)
 - [TestFlight checklist](docs/testflight-checklist.md)
 
 ## Disclaimer
