@@ -69,7 +69,16 @@ jobs:
                   f"aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin {registry_url}",
                   f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml pull",
                   f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml up -d",
-                  "curl -f http://127.0.0.1:8000/health",
+                  "for attempt in $(seq 1 30); do",
+                  "  if curl -fsS http://127.0.0.1:8000/health; then",
+                  "    break",
+                  "  fi",
+                  "  if [ \"$attempt\" -eq 30 ]; then",
+                  "    docker logs food-checker-api --tail 80",
+                  "    exit 1",
+                  "  fi",
+                  "  sleep 2",
+                  "done",
                   "docker logs food-checker-api --tail 40",
               ]
           )
