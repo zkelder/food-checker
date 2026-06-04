@@ -1,0 +1,38 @@
+---
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    mode: "0755"
+
+- name: Check whether app directory is a git repository
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/.git"
+  register: app_git_dir
+
+- name: Check existing git safe.directory values
+  ansible.builtin.command: git config --global --get-all safe.directory
+  become_user: "{{ app_user }}"
+  register: git_safe_directories
+  changed_when: false
+  failed_when: false
+
+- name: Configure git safe.directory for app checkout
+  ansible.builtin.command: git config --global --add safe.directory "{{ app_dir }}"
+  become_user: "{{ app_user }}"
+  when: app_dir not in (git_safe_directories.stdout_lines | default([]))
+
+- name: Check production compose file when repo exists
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/docker-compose.prod.yml"
+  register: prod_compose_file
+  when: app_git_dir.stat.exists
+
+- name: Require production compose file when repo exists
+  ansible.builtin.assert:
+    that:
+      - prod_compose_file.stat.exists
+    fail_msg: "{{ app_dir }}/docker-compose.prod.yml is missing. Pull the latest repo before image deployment."
+  when: app_git_dir.stat.exists

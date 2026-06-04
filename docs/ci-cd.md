@@ -85,3 +85,13 @@ IMAGE_TAG=<commit-sha> scripts/deploy_backend_image.sh
 
 The existing source-build deployment script remains available. A no-SSH
 SSM-based deploy workflow is still future work.
+
+## Host Configuration
+
+Ansible host configuration lives under `ansible/`. It prepares the EC2 backend
+host for ECR image deployment by installing baseline packages, Docker Engine
+from Docker's official apt repository, the Docker Compose plugin, AWS CLI v2
+from the official zip installer, and app directory checks.
+
+Terraform still owns AWS infrastructure. GitHub Actions still owns CI and image
+publishing. Ansible only owns host prerequisites for the EC2 instance.

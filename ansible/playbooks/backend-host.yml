@@ -1,0 +1,11 @@
+---
+- name: Configure Food Checker backend host
+  hosts: backend
+  become: true
+  roles:
+    - common
+    - docker
+    - aws_cli
+    - app_host
+    - role: caddy
+      when: caddy_verify | bool

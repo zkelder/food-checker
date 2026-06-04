@@ -1,0 +1,21 @@
+---
+- name: Check for Caddy
+  ansible.builtin.command: which caddy
+  register: caddy_binary
+  changed_when: false
+  failed_when: false
+
+- name: Report missing Caddy
+  ansible.builtin.fail:
+    msg: "Caddy is not installed. This role is verification-only; Caddyfile management is future work."
+  when: caddy_binary.rc != 0
+
+- name: Verify Caddy service is active
+  ansible.builtin.service_facts:
+
+- name: Require active Caddy service
+  ansible.builtin.assert:
+    that:
+      - "'caddy.service' in ansible_facts.services"
+      - "ansible_facts.services['caddy.service'].state == 'running'"
+    fail_msg: "caddy.service is not active. This role does not manage the Caddyfile yet."

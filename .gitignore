@@ -23,6 +23,10 @@ infra/terraform.tfvars
 infra/*.tfvars
 !infra/*.tfvars.example
 
+# Ansible
+ansible/inventories/*.ini
+!ansible/inventories/*.example.ini
+
 # Local database files
 food_checker.db
 *.db

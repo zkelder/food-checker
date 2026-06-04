@@ -1,0 +1,16 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install baseline packages
+  ansible.builtin.apt:
+    name:
+      - git
+      - curl
+      - unzip
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present

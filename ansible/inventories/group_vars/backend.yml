@@ -1,0 +1,13 @@
+---
+app_user: ubuntu
+app_group: ubuntu
+app_dir: /home/ubuntu/food-checker
+
+docker_users:
+  - ubuntu
+
+aws_cli_zip_url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+aws_cli_zip_path: /tmp/awscliv2.zip
+aws_cli_extract_dir: /tmp/aws
+
+caddy_verify: false
