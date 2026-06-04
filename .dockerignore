@@ -5,10 +5,17 @@ __pycache__/
 
 .git/
 .gitignore
+.github/
 
 .env
 .env.*
 !.env.example
+
+infra/.terraform/
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+infra/*.tfvars
+!infra/*.tfvars.example
 
 food_checker.db
 *.db
