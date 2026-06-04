@@ -71,20 +71,32 @@ This workflow only publishes the image to ECR.
 
 ## EC2 Image Deployment
 
-EC2 image deployment is available as a bridge step in
-`scripts/deploy_backend_image.sh`. It keeps the current SSH-based operations
-model, logs in to ECR from the EC2 host using the instance profile, pulls the
-image with `docker-compose.prod.yml`, starts the container, checks
+EC2 image deployment is defined in
+`.github/workflows/deploy-backend-image.yml`.
+
+It is manual-only through `workflow_dispatch`. The workflow assumes the AWS OIDC
+role, sends an SSM Run Command to the backend EC2 instance, pulls the selected
+ECR image with `docker-compose.prod.yml`, starts the container, checks
 `http://127.0.0.1:8000/health`, and prints recent `food-checker-api` logs.
 
-By default it deploys `latest`. To deploy a specific image tag:
+The `image_tag` input defaults to `latest`. Use a commit SHA tag to deploy a
+specific image produced by the Backend Image workflow.
+
+Required repository variables:
+
+- `AWS_OIDC_ROLE_ARN`
+- `AWS_REGION` (optional; defaults to `us-east-1`)
+- `ECR_REPOSITORY_URL`
+- `BACKEND_INSTANCE_ID` (optional; defaults to the current Terraform-managed
+  backend instance ID)
+
+The local SSH image deploy script remains available as a fallback:
 
 ```bash
 IMAGE_TAG=<commit-sha> scripts/deploy_backend_image.sh
 ```
 
-The existing source-build deployment script remains available. A no-SSH
-SSM-based deploy workflow is still future work.
+The existing source-build deployment script also remains available for now.
 
 ## Host Configuration
 
@@ -96,12 +108,10 @@ from the official zip installer, and app directory checks.
 Terraform still owns AWS infrastructure. GitHub Actions still owns CI and image
 publishing. Ansible only owns host prerequisites for the EC2 instance.
 
-## Planned No-SSH Deployment
+## No-SSH Deployment Foundation
 
-AWS Systems Manager is the planned no-SSH deployment channel. Terraform grants
-the backend EC2 instance managed-instance permissions and gives the GitHub OIDC
-role scoped permission to run `AWS-RunShellScript` against the backend instance.
+AWS Systems Manager is the no-SSH deployment channel. Terraform grants the
+backend EC2 instance managed-instance permissions and gives the GitHub OIDC role
+scoped permission to run `AWS-RunShellScript` against the backend instance.
 
-Ansible ensures the EC2 host has the SSM Agent installed and running. The
-GitHub Actions deploy workflow will be added after the instance is verified as
-registered and online in Systems Manager.
+Ansible ensures the EC2 host has the SSM Agent installed and running.
