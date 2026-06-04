@@ -6,7 +6,8 @@ Backend CI is defined in `.github/workflows/backend-ci.yml`.
 
 It runs on pushes and pull requests to `main` and performs:
 
-- Python dependency installation from `requirements.txt`.
+- Python dependency installation from `requirements.txt` and
+  `requirements-dev.txt`.
 - FastAPI backend import check.
 - Backend test suite with `python -m pytest -q`.
 
@@ -21,30 +22,13 @@ It runs on relevant mobile workflow changes and performs:
 - TypeScript typecheck.
 - Expo lint.
 
-## Manual Backend Deployment
-
-Backend deployment is defined in `.github/workflows/deploy-backend.yml`.
-
-It is manual-only through `workflow_dispatch`; it does not deploy on push.
-Run it from the GitHub Actions tab after CI passes.
-
-The workflow uses these repository secrets:
-
-- `EC2_HOST`
-- `EC2_USER`
-- `EC2_SSH_KEY`
-
-The deploy job SSHes to the EC2 host, resets `/home/ubuntu/food-checker` to
-`origin/main`, optionally updates a host `.venv` if present, rebuilds the Docker
-Compose backend container, and verifies `http://127.0.0.1:8000/health`.
-
 ## AWS OIDC Foundation
 
 AWS OIDC validation is defined in `.github/workflows/aws-oidc-check.yml`.
 
 It is manual-only through `workflow_dispatch` and uses GitHub Actions OIDC to
 assume the IAM role created by Terraform. This avoids long-lived AWS access keys
-and provides the authentication foundation for future ECR and deploy workflows.
+and provides the authentication foundation for ECR and deploy workflows.
 
 Required repository variables:
 
@@ -103,7 +87,7 @@ The existing source-build deployment script also remains available for now.
 Ansible host configuration lives under `ansible/`. It prepares the EC2 backend
 host for ECR image deployment by installing baseline packages, Docker Engine
 from Docker's official apt repository, the Docker Compose plugin, AWS CLI v2
-from the official zip installer, and app directory checks.
+from the official zip installer, SSM Agent, and app directory checks.
 
 Terraform still owns AWS infrastructure. GitHub Actions still owns CI and image
 publishing. Ansible only owns host prerequisites for the EC2 instance.
@@ -115,3 +99,46 @@ backend EC2 instance managed-instance permissions and gives the GitHub OIDC role
 scoped permission to run `AWS-RunShellScript` against the backend instance.
 
 Ansible ensures the EC2 host has the SSM Agent installed and running.
+
+## Fallback Deploy Paths
+
+The local SSH deploy scripts remain fallback/legacy paths:
+
+- `scripts/deploy_backend_image.sh` pulls an ECR image and restarts Docker
+  Compose over SSH.
+- `scripts/deploy_backend.sh` rebuilds from source over SSH.
+
+They are useful during recovery or SSM troubleshooting, but the primary backend
+image deployment path is GitHub Actions -> OIDC -> SSM -> EC2 -> ECR image pull
+-> Docker Compose restart.
+
+## Operating Model
+
+- Infrastructure changes: update Terraform in `infra/`, review `terraform plan`,
+  then apply manually.
+- Host configuration changes: update Ansible under `ansible/`, run the backend
+  host playbook, and verify SSM/Docker health.
+- Backend code changes: Backend CI -> Backend Image -> Deploy Backend Image.
+- Mobile changes: Mobile CI -> manual EAS/TestFlight process.
+- Troubleshooting: check workflow logs, SSM command stdout/stderr, API health,
+  container logs, and the production runbook. Use SSH fallback only when needed.
+
+## Decision Rationale
+
+- EC2 + Docker Compose fits the current MVP: simple, inspectable, low overhead,
+  and enough for one backend container. ECS/EKS can wait until scaling or
+  operational complexity justifies them.
+- SSM replaced SSH as the primary deploy channel because GitHub can deploy
+  without private SSH keys or inbound operator access.
+- Ansible owns host packages so deploy scripts stay focused on deployment, not
+  long-lived server setup.
+- GitHub OIDC avoids long-lived AWS access keys in repository secrets.
+- SSH scripts remain as fallbacks because they are useful during recovery, but
+  they are no longer the preferred deployment path.
+
+## Related Docs
+
+- [Roadmap](roadmap.md)
+- [Production runbook](production-runbook.md)
+- [Mobile release pipeline](mobile-release-pipeline.md)
+- [TestFlight checklist](testflight-checklist.md)

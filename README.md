@@ -8,8 +8,11 @@ concerns. It is an informational screening tool, not a medical diagnosis tool.
 
 - MVP / public beta style project.
 - Backend CI and mobile CI are in place under `.github/workflows/`.
-- TestFlight / EAS mobile builds are configured but still run manually.
-- Production hardening is incremental; this repo does not yet include automated deployment.
+- Backend images build and deploy through GitHub Actions, AWS OIDC, ECR, SSM,
+  and Docker Compose.
+- TestFlight / EAS mobile builds are configured and still run manually.
+- Production hardening is incremental; observability and runbook polish are the
+  next DevOps priorities.
 
 ## Live URLs
 
@@ -47,6 +50,18 @@ OCR, ingredient analysis, user profile data, and scan history. Supabase supports
 authentication and deployed data storage. Public privacy, support, and terms
 pages are hosted under `zkelder.dev`.
 
+## DevOps Architecture
+
+- Terraform owns AWS infrastructure, IAM, ECR, GitHub OIDC, EC2 instance
+  profile, and SSM permissions.
+- Ansible owns EC2 host configuration: baseline packages, Docker, Docker Compose
+  plugin, AWS CLI v2, SSM Agent, and app directory checks.
+- GitHub Actions owns backend CI, mobile CI, backend image publishing, and
+  manual no-SSH backend image deployment.
+- ECR stores backend API images tagged by commit SHA and `latest`.
+- SSM is the no-SSH deployment channel from GitHub Actions to EC2.
+- Docker Compose runs the single-host backend container on EC2.
+
 ## Backend Local Development
 
 ```bash
@@ -79,7 +94,8 @@ npm start
 
 - Backend CI runs dependency install, a backend import check, and `python -m pytest -q`.
 - Mobile CI runs Expo config validation, TypeScript typecheck, and lint.
-- Backend deployment is manual through GitHub Actions after CI passes.
+- Backend image deployment is manual through GitHub Actions after CI/image
+  publishing passes.
 - Workflows live under `.github/workflows/`.
 
 ## API Observability
@@ -93,6 +109,7 @@ npm start
 ## Documentation
 
 - [CI/CD](docs/ci-cd.md)
+- [Roadmap](docs/roadmap.md)
 - [Production runbook](docs/production-runbook.md)
 - [Mobile release pipeline](docs/mobile-release-pipeline.md)
 - [TestFlight checklist](docs/testflight-checklist.md)
