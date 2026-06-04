@@ -32,24 +32,44 @@ def normalize_text(text: str | None) -> str:
     return text
 
 
+def normalize_match_text(text: str | None) -> str:
+    """
+    Normalize text for deterministic token/phrase matching.
+    """
+    normalized = normalize_text(text)
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized)
+
+    return normalized.strip()
+
+
 def keyword_matches_text(keyword: str, text: str) -> bool:
     """
     Match a keyword as a word or phrase instead of a random substring.
     """
-    pattern = r"\b" + re.escape(keyword.lower()) + r"\b"
-    return re.search(pattern, text) is not None
+    normalized_keyword = normalize_match_text(keyword)
+    normalized_text = normalize_match_text(text)
+
+    if not normalized_keyword or not normalized_text:
+        return False
+
+    pattern = r"(?<![a-z0-9])" + re.escape(normalized_keyword) + r"(?![a-z0-9])"
+    return re.search(pattern, normalized_text) is not None
 
 
 def get_rule_keywords(rule_id: str, rule: dict) -> list[str]:
     """
     Return all searchable keywords for a rule.
     """
-    keywords = list(rule.get("keywords", []))
+    keywords = [
+        *rule.get("keywords", []),
+        *rule.get("aliases", []),
+    ]
 
     if rule_id not in keywords:
         keywords.append(rule_id)
 
-    return keywords
+    return list(dict.fromkeys(keywords))
 
 
 def find_matching_rules(
@@ -79,11 +99,14 @@ def find_matching_rules(
                 matches.append(
                     {
                         "ingredient": keyword,
-                        "label": rule.get("display_name", rule.get("label", rule_id)),
-                        "warning": rule.get("warning", ""),
+                        "label": rule.get("label", rule.get("display_name", rule_id)),
+                        "warning": rule.get(
+                            "warning",
+                            rule.get("description", ""),
+                        ),
                         "severity": rule.get(
-                            "default_severity",
-                            rule.get("severity", "info"),
+                            "severity",
+                            rule.get("default_severity", "info"),
                         ),
                         "category": rule.get("category", "general"),
                     }
@@ -118,11 +141,11 @@ def build_summary(matches: list[dict], risk_level: str) -> str:
     labels = [match["label"] for match in matches]
 
     if risk_level == "high":
-        return f"High-risk ingredients found: {', '.join(labels)}."
+        return f"Potential high-priority concerns found: {', '.join(labels)}."
     if risk_level == "medium":
-        return f"Ingredients that may need attention: {', '.join(labels)}."
+        return f"Potential ingredient concerns found: {', '.join(labels)}."
     if risk_level == "low":
-        return f"Minor ingredient notes found: {', '.join(labels)}."
+        return f"Ingredient notes found for review: {', '.join(labels)}."
 
     return f"Ingredient notes found: {', '.join(labels)}."
 

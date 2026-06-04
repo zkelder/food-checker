@@ -309,4 +309,167 @@ INGREDIENT_RULES = {
             "sodium nitrate", "sodium nitrite",
         ],
     },
+
+    "gums_thickeners": {
+        "display_name": "Gums / Thickeners",
+        "category": "additive",
+        "default_severity": "low",
+        "keywords": [
+            "carrageenan", "xanthan gum", "guar gum", "locust bean gum",
+            "gellan gum", "cellulose gum", "carboxymethylcellulose",
+        ],
+    },
 }
+
+
+RULE_DETAILS = {
+    "peanut": {
+        "description": "Peanut terms may indicate a peanut-derived ingredient.",
+        "aliases": ["goobers", "arachis", "ground nut", "ground nuts"],
+    },
+    "tree_nuts": {
+        "description": "Tree nut terms may indicate almond, walnut, cashew, or related nut ingredients.",
+        "aliases": [
+            "almond butter", "almond flour", "walnut oil", "cashew butter",
+            "pecan meal", "hazelnut spread", "pistachio paste",
+            "macadamia nuts",
+        ],
+    },
+    "soy": {
+        "description": "Soy terms may indicate soy-derived protein, lecithin, beans, or fermented soy ingredients.",
+        "aliases": [
+            "soy bean", "soy beans", "soybean lecithin", "soya lecithin",
+            "edamame beans", "soy isolate", "soy protein isolate",
+            "soy protein concentrate",
+        ],
+    },
+    "gluten": {
+        "label": "Gluten / Wheat",
+        "description": "Wheat, barley, rye, malt, and related grain terms may indicate gluten or wheat concerns.",
+        "aliases": [
+            "wheat berries", "wheat bran", "wheat germ", "enriched wheat flour",
+            "unbleached wheat flour", "durum wheat", "semolina flour",
+            "malted barley", "malt syrup", "malt powder", "spelt flour",
+            "rye flour", "barley flour",
+        ],
+    },
+    "milk": {
+        "label": "Milk / Dairy",
+        "description": "Milk and dairy terms may indicate ingredients commonly associated with dairy.",
+        "aliases": [
+            "dairy", "dairy solids", "milk protein", "whey isolate",
+            "whey protein isolate", "caseinates", "butter oil",
+            "cream powder", "cheese powder",
+        ],
+    },
+    "egg": {
+        "description": "Egg terms may indicate egg-derived ingredients such as whites, yolks, albumin, or mayonnaise.",
+        "aliases": [
+            "egg whites", "egg white powder", "egg yolks", "dried egg",
+            "whole egg", "whole eggs", "albumen powder",
+        ],
+    },
+    "fish": {
+        "description": "Fish terms may indicate fish-derived ingredients or sauces.",
+        "aliases": ["fish oil", "fish gelatin", "anchovy paste"],
+    },
+    "shellfish": {
+        "description": "Shellfish terms may indicate crustacean or mollusk ingredients.",
+        "aliases": ["shrimp paste", "crab extract", "lobster stock"],
+    },
+    "sesame": {
+        "description": "Sesame terms may indicate sesame seed, oil, or tahini ingredients.",
+        "aliases": ["sesame paste", "sesame flour"],
+    },
+    "corn": {
+        "description": "Corn terms may indicate corn-derived sweeteners, starches, oils, or flours.",
+        "aliases": ["corn sugar", "glucose syrup", "modified food starch"],
+    },
+    "mustard": {
+        "description": "Mustard terms may indicate mustard seed, flour, powder, or oil.",
+        "aliases": ["mustard extract", "mustard flavor"],
+    },
+    "added_sugars": {
+        "description": "Sugar terms may indicate added sweeteners or concentrated sweetening ingredients.",
+        "aliases": ["cane syrup", "date syrup", "coconut sugar", "fruit syrup"],
+    },
+    "seed_oils": {
+        "description": "Seed oil terms may indicate extracted seed or vegetable oils.",
+        "aliases": ["soy oil", "soya oil", "high oleic sunflower oil"],
+    },
+    "artificial_sweeteners": {
+        "description": "Artificial sweetener terms may indicate non-sugar sweetening additives.",
+        "aliases": ["acesulfame-potassium", "acesulfame k", "aspartame-acesulfame"],
+    },
+    "sugar_alcohols": {
+        "description": "Sugar alcohol terms may indicate polyol sweeteners.",
+        "aliases": ["polyols", "hydrogenated starch hydrolysate"],
+    },
+    "artificial_colors": {
+        "description": "Artificial color terms may indicate FD&C color additives.",
+        "aliases": [
+            "red #40", "fdc red 40", "fd c red 40", "allura red",
+            "yellow #5", "fd c yellow 5", "fdc yellow 5",
+            "blue #1", "fd c blue 1", "fdc blue 1",
+        ],
+    },
+    "preservatives": {
+        "description": "Preservative terms may indicate additives commonly used to slow spoilage or oxidation.",
+        "aliases": ["benzoate", "sorbate", "propionate", "sodium erythorbate"],
+    },
+    "msg_glutamates": {
+        "description": "MSG and glutamate terms may indicate ingredients commonly associated with glutamate additives.",
+        "aliases": ["monosodium-glutamate", "free glutamate", "hydrolysed vegetable protein"],
+    },
+    "sulfites": {
+        "description": "Sulfite terms may indicate sulfite preservatives.",
+        "aliases": ["sulfur dioxide preservative", "sulphur dioxide preservative"],
+    },
+    "caffeine": {
+        "description": "Caffeine terms may indicate caffeine-containing ingredients.",
+        "aliases": ["coffee powder", "tea extract", "cocoa extract"],
+    },
+    "alcohol_ingredients": {
+        "description": "Alcohol terms may indicate alcohol-derived ingredients.",
+        "aliases": ["ethyl alcohol", "cooking wine"],
+    },
+    "pork": {
+        "description": "Pork terms may indicate pork-derived ingredients.",
+        "aliases": ["porcine gelatin", "pork fat"],
+    },
+    "beef": {
+        "description": "Beef terms may indicate beef-derived ingredients.",
+        "aliases": ["bovine gelatin", "beef extract"],
+    },
+    "animal_derivatives": {
+        "description": "Animal derivative terms may indicate animal-derived processing or ingredient sources.",
+        "aliases": ["animal gelatin", "cochineal extract", "confectioners glaze"],
+    },
+    "high_sodium": {
+        "description": "Sodium terms may indicate ingredients commonly associated with higher sodium content.",
+        "aliases": ["sodium citrate", "sodium acid pyrophosphate"],
+    },
+    "gums_thickeners": {
+        "description": "Gum and thickener terms may indicate texture or stabilizing additives.",
+        "aliases": ["irish moss", "e407"],
+    },
+}
+
+
+for rule_id, rule in INGREDIENT_RULES.items():
+    details = RULE_DETAILS.get(rule_id, {})
+    label = details.get("label", rule.get("display_name", rule_id))
+    severity = rule.get("default_severity", rule.get("severity", "info"))
+    description = details.get(
+        "description",
+        f"{label} may indicate a potential ingredient concern.",
+    )
+
+    rule["id"] = rule_id
+    rule["label"] = label
+    rule["display_name"] = label
+    rule["severity"] = severity
+    rule["default_severity"] = severity
+    rule["description"] = description
+    rule["warning"] = description
+    rule["aliases"] = details.get("aliases", [])

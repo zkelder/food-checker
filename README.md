@@ -26,6 +26,9 @@ concerns. It is an informational screening tool, not a medical diagnosis tool.
 - Saves scan history and user profile data where supported.
 - Shows OCR quality warnings when extracted text may be incomplete or noisy.
 
+Ingredient rules are curated and expandable. They are not a complete medical
+ingredient database, and matches should be treated as review prompts.
+
 ## Tech Stack
 
 - FastAPI / Python

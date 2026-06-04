@@ -284,7 +284,7 @@ def test_analyze_selected_rules_filter_does_not_crash():
     assert status_code == 200
     assert result["match_count"] >= 1
     assert {match["label"] for match in result["matches"]}.issubset(
-        {"Milk", "Gluten", "Soy"},
+        {"Milk / Dairy", "Gluten / Wheat", "Soy"},
     )
 
 
