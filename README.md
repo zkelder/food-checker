@@ -79,6 +79,7 @@ npm start
 
 - Backend CI runs dependency install, a backend import check, and `python -m pytest -q`.
 - Mobile CI runs Expo config validation, TypeScript typecheck, and lint.
+- Backend deployment is manual through GitHub Actions after CI passes.
 - Workflows live under `.github/workflows/`.
 
 ## API Observability
@@ -91,6 +92,7 @@ npm start
 
 ## Documentation
 
+- [CI/CD](docs/ci-cd.md)
 - [Production runbook](docs/production-runbook.md)
 - [Mobile release pipeline](docs/mobile-release-pipeline.md)
 - [TestFlight checklist](docs/testflight-checklist.md)
