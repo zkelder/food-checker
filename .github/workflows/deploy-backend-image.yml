@@ -60,15 +60,21 @@ jobs:
           repository_url = os.environ["ECR_REPOSITORY_URL"]
           registry_url = repository_url.rsplit("/", 1)[0]
 
+          script = "\n".join(
+              [
+                  "set -euo pipefail",
+                  "cd /home/ubuntu/food-checker",
+                  "git pull",
+                  f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_url}",
+                  f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml pull",
+                  f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml up -d",
+                  "curl -f http://127.0.0.1:8000/health",
+                  "docker logs food-checker-api --tail 40",
+              ]
+          )
+
           commands = [
-              "set -euo pipefail",
-              "cd /home/ubuntu/food-checker",
-              "git pull",
-              f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_url}",
-              f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml pull",
-              f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml up -d",
-              "curl -f http://127.0.0.1:8000/health",
-              "docker logs food-checker-api --tail 40",
+              "bash -lc " + json.dumps(script),
           ]
 
           with open("/tmp/ssm-parameters.json", "w", encoding="utf-8") as handle:
