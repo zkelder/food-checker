@@ -56,7 +56,6 @@ jobs:
           import os
 
           image_tag = os.environ["IMAGE_TAG"]
-          region = os.environ["AWS_REGION"]
           repository_url = os.environ["ECR_REPOSITORY_URL"]
           registry_url = repository_url.rsplit("/", 1)[0]
 
@@ -65,7 +64,7 @@ jobs:
                   "set -euo pipefail",
                   "cd /home/ubuntu/food-checker",
                   "git pull",
-                  f"aws ecr get-login-password --region {region} | docker login --username AWS --password-stdin {registry_url}",
+                  f"aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin {registry_url}",
                   f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml pull",
                   f"IMAGE_TAG={image_tag} docker compose -f docker-compose.prod.yml up -d",
                   "curl -f http://127.0.0.1:8000/health",
@@ -74,7 +73,9 @@ jobs:
           )
 
           commands = [
-              "bash -lc " + json.dumps(script),
+              "cat > /tmp/food-checker-deploy.sh <<'EOF'\n" + script + "\nEOF",
+              "chmod +x /tmp/food-checker-deploy.sh",
+              "bash /tmp/food-checker-deploy.sh",
           ]
 
           with open("/tmp/ssm-parameters.json", "w", encoding="utf-8") as handle:
