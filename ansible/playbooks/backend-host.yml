@@ -6,6 +6,7 @@
     - common
     - docker
     - aws_cli
+    - ssm_agent
     - app_host
     - role: caddy
       when: caddy_verify | bool

@@ -8,6 +8,16 @@ output "backend_api_url" {
   value       = "http://${aws_eip.backend.public_ip}:8000"
 }
 
+output "backend_instance_id" {
+  description = "EC2 instance ID for the backend host."
+  value       = aws_instance.backend.id
+}
+
+output "backend_ssm_target" {
+  description = "SSM target selector for no-SSH backend deploy commands."
+  value       = "instanceids=${aws_instance.backend.id}"
+}
+
 output "ssh_command" {
   description = "SSH command for connecting to the backend instance."
   value       = "ssh -i ~/.ssh/food-checker-aws ubuntu@${aws_eip.backend.public_ip}"

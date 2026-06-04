@@ -95,3 +95,13 @@ from the official zip installer, and app directory checks.
 
 Terraform still owns AWS infrastructure. GitHub Actions still owns CI and image
 publishing. Ansible only owns host prerequisites for the EC2 instance.
+
+## Planned No-SSH Deployment
+
+AWS Systems Manager is the planned no-SSH deployment channel. Terraform grants
+the backend EC2 instance managed-instance permissions and gives the GitHub OIDC
+role scoped permission to run `AWS-RunShellScript` against the backend instance.
+
+Ansible ensures the EC2 host has the SSM Agent installed and running. The
+GitHub Actions deploy workflow will be added after the instance is verified as
+registered and online in Systems Manager.

@@ -1,0 +1,23 @@
+---
+- name: Ensure snapd is installed
+  ansible.builtin.apt:
+    name: snapd
+    state: present
+
+- name: Check whether SSM Agent snap is installed
+  ansible.builtin.command: snap list amazon-ssm-agent
+  register: ssm_agent_snap
+  changed_when: false
+  failed_when: false
+
+- name: Install SSM Agent snap
+  ansible.builtin.command: snap install amazon-ssm-agent --classic
+  when: ssm_agent_snap.rc != 0
+
+- name: Enable and start SSM Agent snap service
+  ansible.builtin.command: snap start --enable amazon-ssm-agent
+  changed_when: false
+
+- name: Verify SSM Agent service is active
+  ansible.builtin.command: systemctl is-active snap.amazon-ssm-agent.amazon-ssm-agent.service
+  changed_when: false

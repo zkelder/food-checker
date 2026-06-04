@@ -13,6 +13,15 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_caller_identity" "current" {}
+
+data "aws_partition" "current" {}
+
+locals {
+  aws_run_shell_script_document_arn = "arn:${data.aws_partition.current.partition}:ssm:${var.aws_region}::document/AWS-RunShellScript"
+  backend_instance_arn              = "arn:${data.aws_partition.current.partition}:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${aws_instance.backend.id}"
+}
+
 data "aws_iam_policy_document" "github_actions_oidc_assume_role" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -59,6 +68,29 @@ data "aws_iam_policy_document" "github_actions_ecr_push" {
       "ecr:UploadLayerPart",
     ]
     resources = [aws_ecr_repository.backend_api.arn]
+  }
+}
+
+# Future no-SSH deploy workflows will use OIDC to run a tightly scoped
+# AWS-RunShellScript command against the backend EC2 instance.
+data "aws_iam_policy_document" "github_actions_ssm_deploy" {
+  statement {
+    sid     = "SendBackendDeployCommand"
+    actions = ["ssm:SendCommand"]
+    resources = [
+      local.aws_run_shell_script_document_arn,
+      local.backend_instance_arn,
+    ]
+  }
+
+  statement {
+    sid = "ReadBackendDeployCommandStatus"
+    actions = [
+      "ssm:GetCommandInvocation",
+      "ssm:ListCommandInvocations",
+      "ssm:ListCommands",
+    ]
+    resources = ["*"]
   }
 }
 
@@ -157,6 +189,12 @@ resource "aws_iam_role_policy" "github_actions_ecr_push" {
   policy = data.aws_iam_policy_document.github_actions_ecr_push.json
 }
 
+resource "aws_iam_role_policy" "github_actions_ssm_deploy" {
+  name   = "${var.project_name}-github-actions-ssm-deploy"
+  role   = aws_iam_role.github_actions_oidc.id
+  policy = data.aws_iam_policy_document.github_actions_ssm_deploy.json
+}
+
 resource "aws_ecr_repository" "backend_api" {
   name                 = "${var.project_name}-api"
   image_tag_mutability = "MUTABLE"
@@ -206,6 +244,11 @@ resource "aws_iam_role_policy" "backend_ec2_ecr_pull" {
   name   = "${var.project_name}-backend-ecr-pull"
   role   = aws_iam_role.backend_ec2.id
   policy = data.aws_iam_policy_document.backend_ec2_ecr_pull.json
+}
+
+resource "aws_iam_role_policy_attachment" "backend_ec2_ssm_core" {
+  role       = aws_iam_role.backend_ec2.name
+  policy_arn = "arn:${data.aws_partition.current.partition}:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "backend" {

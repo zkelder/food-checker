@@ -44,7 +44,7 @@ ansible-playbook -i inventories/production.ini playbooks/backend-host.yml
   ECR.
 - GitHub Actions owns CI checks and backend image build/push to ECR.
 - Ansible owns EC2 host prerequisites: baseline packages, Docker Engine,
-  Docker Compose plugin, AWS CLI v2, and app directory checks.
+  Docker Compose plugin, AWS CLI v2, SSM Agent, and app directory checks.
 - Deployment scripts own pulling/running the selected backend image for now.
 
 The Caddy role is verification-only and disabled by default. Managing the
