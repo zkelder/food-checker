@@ -62,6 +62,36 @@ data "aws_iam_policy_document" "github_actions_ecr_push" {
   }
 }
 
+data "aws_iam_policy_document" "backend_ec2_assume_role" {
+  statement {
+    actions = ["sts:AssumeRole"]
+    effect  = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+data "aws_iam_policy_document" "backend_ec2_ecr_pull" {
+  statement {
+    sid       = "EcrLogin"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "PullBackendImage"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:GetDownloadUrlForLayer",
+    ]
+    resources = [aws_ecr_repository.backend_api.arn]
+  }
+}
+
 data "aws_vpc" "default" {
   default = true
 }
@@ -162,6 +192,32 @@ resource "aws_ecr_lifecycle_policy" "backend_api" {
   })
 }
 
+resource "aws_iam_role" "backend_ec2" {
+  name               = "${var.project_name}-backend-ec2"
+  assume_role_policy = data.aws_iam_policy_document.backend_ec2_assume_role.json
+
+  tags = {
+    Name    = "${var.project_name}-backend-ec2"
+    Project = var.project_name
+  }
+}
+
+resource "aws_iam_role_policy" "backend_ec2_ecr_pull" {
+  name   = "${var.project_name}-backend-ecr-pull"
+  role   = aws_iam_role.backend_ec2.id
+  policy = data.aws_iam_policy_document.backend_ec2_ecr_pull.json
+}
+
+resource "aws_iam_instance_profile" "backend" {
+  name = "${var.project_name}-backend"
+  role = aws_iam_role.backend_ec2.name
+
+  tags = {
+    Name    = "${var.project_name}-backend"
+    Project = var.project_name
+  }
+}
+
 resource "aws_key_pair" "backend" {
   key_name   = "${var.project_name}-backend-key"
   public_key = file(pathexpand(var.ssh_public_key_path))
@@ -228,6 +284,7 @@ resource "aws_instance" "backend" {
   subnet_id                   = data.aws_subnet.backend.id
   vpc_security_group_ids      = [aws_security_group.backend.id]
   key_name                    = aws_key_pair.backend.key_name
+  iam_instance_profile        = aws_iam_instance_profile.backend.name
   associate_public_ip_address = true
 
   user_data = <<-EOF_SCRIPT

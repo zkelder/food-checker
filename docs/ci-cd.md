@@ -67,5 +67,21 @@ Required repository variables:
 - `AWS_REGION` (optional; defaults to `us-east-1`)
 - `ECR_REPOSITORY_URL`
 
-This workflow only publishes the image to ECR. Deploying that image to EC2 or
-ECS is a future step.
+This workflow only publishes the image to ECR.
+
+## EC2 Image Deployment
+
+EC2 image deployment is available as a bridge step in
+`scripts/deploy_backend_image.sh`. It keeps the current SSH-based operations
+model, logs in to ECR from the EC2 host using the instance profile, pulls the
+image with `docker-compose.prod.yml`, starts the container, checks
+`http://127.0.0.1:8000/health`, and prints recent `food-checker-api` logs.
+
+By default it deploys `latest`. To deploy a specific image tag:
+
+```bash
+IMAGE_TAG=<commit-sha> scripts/deploy_backend_image.sh
+```
+
+The existing source-build deployment script remains available. A no-SSH
+SSM-based deploy workflow is still future work.
