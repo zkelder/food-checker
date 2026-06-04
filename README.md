@@ -86,20 +86,6 @@ npm start
 - Clients may send `X-Request-ID` to correlate client reports with backend logs.
 - Backend logging should avoid request bodies, full ingredient text, images, auth tokens, and secrets.
 
-## Environment Variables
-
-Do not commit secrets or real production values.
-
-- `DATABASE_URL`: backend database connection string.
-- `CORS_ORIGINS`: comma-separated allowed browser origins.
-- `APP_VERSION`: public API version metadata.
-- `APP_ENVIRONMENT`: public API environment metadata.
-- `MAX_IMAGE_UPLOAD_BYTES`: maximum accepted image upload size for OCR.
-- `SUPABASE_URL`: backend Supabase project URL for JWT verification.
-- `EXPO_PUBLIC_API_BASE_URL`: mobile API base URL.
-- `EXPO_PUBLIC_SUPABASE_URL`: mobile Supabase project URL.
-- `EXPO_PUBLIC_SUPABASE_ANON_KEY`: mobile Supabase anon key.
-
 ## Documentation
 
 - [Production runbook](docs/production-runbook.md)
