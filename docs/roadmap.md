@@ -1,9 +1,10 @@
 # Roadmap
 
-This roadmap separates what is already working from the best next investments.
-The current EC2 + Docker Compose + ECR + SSM architecture is a good MVP
-deployment platform; the next work should make it more observable and easier to
-operate before moving to heavier orchestration.
+This roadmap summarizes the current Food Checker platform and the most useful
+next improvements. The current EC2 + Docker Compose + ECR + SSM architecture is
+appropriate for the project at this stage; the next work should improve
+observability, operational clarity, and product quality before moving to heavier
+orchestration.
 
 ## Completed
 
@@ -21,7 +22,7 @@ operate before moving to heavier orchestration.
   -> ECR image pull -> Docker Compose restart.
 - Local SSH deploy scripts retained as fallback paths.
 
-## Recommended Priorities
+## Current Priorities
 
 1. Observability, logging, alerts, and runbook polish.
 2. Secrets and environment hardening.
@@ -30,11 +31,11 @@ operate before moving to heavier orchestration.
 5. ECS migration only after the current single-host platform is observable and
    well documented.
 
-Do not prioritize automated start/stop workflows unless EC2 cost control becomes
-annoying. They add operational edge cases and are less valuable than visibility
-into health, errors, deploys, and recovery.
+Automated start/stop workflows are optional operational conveniences, not core
+roadmap items. They are lower priority than visibility into health, errors,
+deploys, and recovery.
 
-## Near-Term Polish
+## Near-Term Improvements
 
 - Add CloudWatch log shipping for backend/container logs.
 - Add basic CloudWatch metrics and alarms for instance health, disk pressure,
@@ -48,7 +49,7 @@ Best next DevOps step: observability plus runbook polish. The deployment path is
 now strong enough; the next question is whether failures are visible, actionable,
 and easy to recover from.
 
-## Best Next DevOps Options
+## Future Architecture Options
 
 - Observability/monitoring with CloudWatch logs, metrics, and alarms.
   Recommended next because it improves every future deploy and incident.
@@ -60,13 +61,14 @@ and easy to recover from.
 - Terraform remote state.
   Useful later when multiple operators or CI-driven Terraform become real.
 - Automated start/stop workflows.
-  Optional only if EC2 costs become a recurring annoyance.
+  Optional cost-control convenience rather than a core platform requirement.
 - ECS migration.
-  Good later if single-host Docker Compose becomes limiting.
+  Appropriate later if single-host Docker Compose becomes limiting.
 - Kubernetes/EKS.
-  Stretch goal much later; currently too much platform for this app.
+  Later-stage option if the product grows into multiple services or requires
+  Kubernetes-specific capabilities.
 
-## Product/App Options
+## Product Improvements
 
 - Ingredient database and rules quality.
   Best next product investment. Better aliases, explanations, false-positive
@@ -80,7 +82,7 @@ and easy to recover from.
   Continue tightening legal/support links, screenshots, review notes, and
   TestFlight feedback before broader release.
 
-## Later / Resume Stretch Goals
+## Later Platform Goals
 
 - ECS service behind an Application Load Balancer.
 - Centralized secrets through AWS Secrets Manager or SSM Parameter Store.
