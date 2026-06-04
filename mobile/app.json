@@ -15,7 +15,7 @@
       "url": "https://u.expo.dev/12b42e16-46cb-402b-89de-844fafa0c946"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.zkelder.foodchecker",
       "infoPlist": {
         "NSCameraUsageDescription": "Food Checker uses the camera to scan ingredient labels.",
