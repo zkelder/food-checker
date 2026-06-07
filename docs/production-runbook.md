@@ -12,10 +12,15 @@
 curl https://api.foodchecker.zkelder.dev/health
 curl https://api.foodchecker.zkelder.dev/version
 curl -H "X-Request-ID: manual-check-$(date +%s)" https://api.foodchecker.zkelder.dev/health
+curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rule_ids":["milk"]}'
 ```
 
 Confirm that responses are successful and include an `X-Request-ID` response
 header.
+
+`/health` alone is not enough to validate a production deploy. It can pass while
+application logic such as ingredient analysis is broken, so include the
+synthetic `/analyze` request when verifying a release.
 
 ## Local Backend Verification
 
@@ -57,24 +62,51 @@ Do not commit secrets or real production values.
 - `EXPO_PUBLIC_SUPABASE_URL`: mobile Supabase project URL.
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`: mobile Supabase anon key.
 
-## Deployment / Restart Checklist
+## Production Deploy Verification
 
-Use the host's current process manager or service setup.
+Primary backend deploys use the manual `Deploy Backend Image` workflow. It
+deploys through GitHub Actions OIDC, AWS SSM Run Command, ECR, and Docker
+Compose on the EC2 host.
 
-1. SSH to the backend host.
-2. Pull the latest `main`.
-3. Activate the backend environment.
-4. Install dependencies if `requirements.txt` changed.
-5. Restart the backend process or service.
-6. Verify `/health` and `/version`.
-7. Check logs for request IDs, errors, OCR failures, and database connectivity issues.
+After a deploy, verify:
+
+```bash
+curl https://api.foodchecker.zkelder.dev/health
+curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rule_ids":["milk"]}'
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+docker inspect food-checker-api --format '{{.Config.Image}}'
+df -h
+docker system df
+```
+
+The synthetic `/analyze` response should include `match_count >= 1`.
+
+## Disk Cleanup
+
+Safe cleanup commands:
+
+```bash
+docker image prune -a -f --filter "until=168h"
+docker builder prune -a -f --filter "until=168h"
+rm -rf /tmp/aws || true
+```
+
+Do not prune Docker volumes unless that action has been intentionally reviewed.
+Volumes may contain persistent data or state for services on the host.
 
 ## Rollback Checklist
 
-1. Identify the last known good commit.
-2. Prefer `git revert` for normal rollback.
-3. Restart the backend process or service.
-4. Verify `/health` and `/version`.
+1. Identify the last known good backend image tag in ECR, usually a previous
+   commit SHA from the Backend Image workflow.
+2. Re-run the `Deploy Backend Image` workflow with that previous SHA as the
+   `image_tag` input.
+3. Verify `/health` and the synthetic `/analyze` request.
+4. Check the running image:
+
+```bash
+docker inspect food-checker-api --format '{{.Config.Image}}'
+```
+
 5. Check logs for request IDs and recurring errors.
 
 ## Troubleshooting

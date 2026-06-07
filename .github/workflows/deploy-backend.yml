@@ -1,4 +1,6 @@
-name: Deploy Backend
+# Legacy source-build fallback. Primary production deploys use
+# deploy-backend-image.yml through GitHub OIDC, SSM, ECR, and Docker Compose.
+name: Deploy Backend Legacy SSH
 
 on:
   workflow_dispatch:

@@ -46,6 +46,30 @@
       - docker-compose-plugin
     state: present
 
+- name: Ensure Docker daemon configuration directory exists
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Configure Docker json-file log rotation
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      {
+        "log-driver": "json-file",
+        "log-opts": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      }
+  notify: Restart Docker
+
 - name: Add app users to docker group
   ansible.builtin.user:
     name: "{{ item }}"

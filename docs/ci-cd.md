@@ -43,7 +43,7 @@ Backend image publishing is defined in `.github/workflows/backend-image.yml`.
 
 It is manual-only through `workflow_dispatch`. The workflow assumes the AWS OIDC
 role, logs in to Amazon ECR, builds the backend Docker image from the repository
-root `Dockerfile`, and pushes both the commit SHA tag and `latest`.
+root `Dockerfile`, and pushes both `$GITHUB_SHA` and `latest` tags.
 
 Required repository variables:
 
@@ -58,10 +58,15 @@ This workflow only publishes the image to ECR.
 EC2 image deployment is defined in
 `.github/workflows/deploy-backend-image.yml`.
 
+This is the primary production deploy path:
+
+GitHub Actions -> AWS OIDC -> SSM Run Command -> EC2 -> ECR image pull ->
+Docker Compose restart.
+
 It is manual-only through `workflow_dispatch`. The workflow assumes the AWS OIDC
-role, sends an SSM Run Command to the backend EC2 instance, pulls the selected
-ECR image with `docker-compose.prod.yml`, starts the container, checks
-`http://127.0.0.1:8000/health`, and prints recent `food-checker-api` logs.
+role, sends an SSM Run Command to the backend EC2 instance, logs in to ECR,
+pulls the selected ECR image with `docker-compose.prod.yml`, starts the
+container, and verifies the deployment.
 
 The `image_tag` input defaults to `latest`. Use a commit SHA tag to deploy a
 specific image produced by the Backend Image workflow.
@@ -81,6 +86,20 @@ IMAGE_TAG=<commit-sha> scripts/deploy_backend_image.sh
 ```
 
 The existing source-build deployment script also remains available for now.
+
+Post-deploy validation includes:
+
+- `GET http://127.0.0.1:8000/health`.
+- A synthetic `POST http://127.0.0.1:8000/analyze` request using a known
+  ingredient sample and expecting `match_count >= 1`.
+
+Post-deploy cleanup runs only after validation succeeds:
+
+- Unused Docker images older than 7 days.
+- Docker build cache older than 7 days.
+- `/tmp/aws` removal.
+
+The workflow does not prune Docker volumes.
 
 ## Host Configuration
 
@@ -107,6 +126,8 @@ The local SSH deploy scripts remain fallback/legacy paths:
 - `scripts/deploy_backend_image.sh` pulls an ECR image and restarts Docker
   Compose over SSH.
 - `scripts/deploy_backend.sh` rebuilds from source over SSH.
+- `.github/workflows/deploy-backend.yml` is the legacy manual SSH/source-build
+  GitHub Actions fallback.
 
 They are useful during recovery or SSM troubleshooting, but the primary backend
 image deployment path is GitHub Actions -> OIDC -> SSM -> EC2 -> ECR image pull
