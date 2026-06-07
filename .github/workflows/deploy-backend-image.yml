@@ -114,7 +114,7 @@ jobs:
                   "analyze_response=/tmp/food-checker-analyze-response.json",
                   "if ! curl -fsS -X POST http://127.0.0.1:8000/analyze \\",
                   "  -H 'Content-Type: application/json' \\",
-                  "  -d '{\"text\":\"milk, wheat flour, soybean oil, red 40, sugar\",\"selected_rule_ids\":[\"milk\"]}' \\",
+                  "  -d '{\"text\":\"milk, wheat flour, soybean oil, red 40, sugar\",\"selected_rules\":[\"milk\"]}' \\",
                   "  -o \"$analyze_response\"; then",
                   "  echo \"Synthetic analyze request failed.\" >&2",
                   "  print_backend_logs 80",

@@ -12,7 +12,7 @@
 curl https://api.foodchecker.zkelder.dev/health
 curl https://api.foodchecker.zkelder.dev/version
 curl -H "X-Request-ID: manual-check-$(date +%s)" https://api.foodchecker.zkelder.dev/health
-curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rule_ids":["milk"]}'
+curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rules":["milk"]}'
 ```
 
 Confirm that responses are successful and include an `X-Request-ID` response
@@ -72,7 +72,7 @@ After a deploy, verify:
 
 ```bash
 curl https://api.foodchecker.zkelder.dev/health
-curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rule_ids":["milk"]}'
+curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rules":["milk"]}'
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 docker inspect food-checker-api --format '{{.Config.Image}}'
 df -h
