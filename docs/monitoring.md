@@ -15,6 +15,10 @@ dashboard screenshots, not public access.
 Grafana, Prometheus, and node_exporter are bound to `127.0.0.1` on the EC2
 host. Do not add public security group ingress or Caddy routes for monitoring.
 
+Prometheus keeps 48 hours of local metrics. This is intentionally lightweight
+for the current small EC2 host and temporary single-host setup, while preserving
+enough recent data for troubleshooting and dashboard screenshots.
+
 ## Access
 
 Open a private Grafana tunnel:

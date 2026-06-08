@@ -102,6 +102,8 @@ path remains `https://api.foodchecker.zkelder.dev/health`.
 
 Monitoring is deployed by `docker-compose.prod.yml` and bound to localhost on
 the EC2 host. Do not expose Grafana, Prometheus, or node_exporter publicly.
+Prometheus local retention is 48 hours to keep disk usage small on the current
+temporary EC2 host while preserving enough recent data for troubleshooting.
 
 Run these on the EC2 host:
 
