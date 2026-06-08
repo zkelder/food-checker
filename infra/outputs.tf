@@ -4,8 +4,8 @@ output "backend_public_ip" {
 }
 
 output "backend_api_url" {
-  description = "HTTP URL for the FastAPI backend."
-  value       = "http://${aws_eip.backend.public_ip}:8000"
+  description = "Public HTTPS URL for the Food Checker API through Caddy."
+  value       = "https://api.foodchecker.zkelder.dev"
 }
 
 output "backend_instance_id" {

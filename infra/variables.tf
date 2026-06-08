@@ -28,7 +28,7 @@ variable "allowed_ssh_cidr" {
 }
 
 variable "allowed_api_cidr" {
-  description = "CIDR allowed to access the API port."
+  description = "Legacy unused input retained temporarily for existing local tfvars compatibility. FastAPI is no longer exposed directly on TCP 8000."
   type        = string
   default     = "0.0.0.0/0"
 }

@@ -8,6 +8,8 @@
 - Production public API traffic should go through Caddy/HTTPS. The FastAPI
   container binds port 8000 to `127.0.0.1` on the EC2 host for Caddy and local
   health checks only.
+- The Terraform security group exposes public HTTP/HTTPS for Caddy and trusted
+  SSH only; it does not expose FastAPI's raw TCP 8000 port.
 
 ## Public Endpoint Verification
 
@@ -91,13 +93,8 @@ From outside the EC2 host, direct Docker access to FastAPI should not be served:
 curl http://54.159.60.186:8000/health
 ```
 
-After security group hardening, that public port 8000 check should fail or not
-connect. The public supported path remains
-`https://api.foodchecker.zkelder.dev/health`.
-
-Terraform still contains the older TCP 8000 ingress rule for the backend
-security group. Tighten that rule after confirming Caddy/HTTPS works with the
-localhost-only Docker binding.
+That public port 8000 check should fail or not connect. The public supported
+path remains `https://api.foodchecker.zkelder.dev/health`.
 
 ## Disk Cleanup
 
