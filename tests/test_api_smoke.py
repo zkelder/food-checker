@@ -140,6 +140,70 @@ async def direct_asgi_request(
     return status_code, json.loads(response_body or b"{}"), response_headers
 
 
+async def direct_asgi_text_request(
+    method: str,
+    path: str,
+    *,
+    body: bytes = b"",
+    headers: list[tuple[bytes, bytes]] | None = None,
+) -> tuple[int, str, dict[str, str]]:
+    request_headers = headers or []
+    scope = {
+        "type": "http",
+        "asgi": {"version": "3.0"},
+        "http_version": "1.1",
+        "method": method,
+        "scheme": "http",
+        "path": path,
+        "raw_path": path.encode("ascii"),
+        "query_string": b"",
+        "headers": request_headers,
+        "client": ("testclient", 50000),
+        "server": ("testserver", 80),
+    }
+
+    messages: list[dict[str, Any]] = []
+    request_sent = False
+
+    async def receive() -> dict[str, Any]:
+        nonlocal request_sent
+
+        if not request_sent:
+            request_sent = True
+            return {
+                "type": "http.request",
+                "body": body,
+                "more_body": False,
+            }
+
+        return {"type": "http.disconnect"}
+
+    async def send(message: dict[str, Any]) -> None:
+        messages.append(message)
+
+    with inline_threadpool_for_local_tests():
+        await app(scope, receive, send)
+
+    status_code = next(
+        message["status"]
+        for message in messages
+        if message["type"] == "http.response.start"
+    )
+    response_body = b"".join(
+        message.get("body", b"")
+        for message in messages
+        if message["type"] == "http.response.body"
+    )
+    response_headers = {
+        key.decode("latin-1"): value.decode("latin-1")
+        for message in messages
+        if message["type"] == "http.response.start"
+        for key, value in message.get("headers", [])
+    }
+
+    return status_code, response_body.decode("utf-8"), response_headers
+
+
 def request(
     method: str,
     path: str,
@@ -186,6 +250,14 @@ def request_json(
     return status_code, body
 
 
+def request_text(method: str, path: str) -> tuple[int, str, dict[str, str]]:
+    if client is not None:
+        response = client.request(method, path)
+        return response.status_code, response.text, dict(response.headers)
+
+    return asyncio.run(direct_asgi_text_request(method, path))
+
+
 def build_multipart_upload(
     file_bytes: bytes,
     *,
@@ -225,6 +297,25 @@ def test_version_returns_public_metadata():
     assert body["app"] == "Food Checker API"
     assert body["version"]
     assert body["environment"]
+
+
+def test_status_returns_public_safe_status():
+    status_code, body = request_json("GET", "/status")
+
+    assert status_code == 200
+    assert body["status"] == "ok"
+    assert body["service"] == "food-checker-api"
+    assert body["version"]
+    assert body["environment"]
+
+
+def test_metrics_returns_prometheus_text():
+    status_code, body, headers = request_text("GET", "/metrics")
+
+    assert status_code == 200
+    assert "text/plain" in headers["content-type"]
+    assert "# HELP" in body
+    assert "http" in body or "python_info" in body or "process" in body
 
 
 def test_request_id_header_is_echoed_when_provided():

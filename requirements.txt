@@ -10,6 +10,7 @@ h11==0.16.0
 idna==3.16
 packaging==26.2
 pillow==12.2.0
+prometheus-client==0.25.0
 psycopg-binary==3.3.4
 psycopg2-binary==2.9.12
 pydantic==2.13.4

@@ -10,12 +10,14 @@
   health checks only.
 - The Terraform security group exposes public HTTP/HTTPS for Caddy and trusted
   SSH only; it does not expose FastAPI's raw TCP 8000 port.
+- Monitoring services are private and reachable through SSH tunnels only.
 
 ## Public Endpoint Verification
 
 ```bash
 curl https://api.foodchecker.zkelder.dev/health
 curl https://api.foodchecker.zkelder.dev/version
+curl https://api.foodchecker.zkelder.dev/status
 curl -H "X-Request-ID: manual-check-$(date +%s)" https://api.foodchecker.zkelder.dev/health
 curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rules":["milk"]}'
 ```
@@ -95,6 +97,40 @@ curl http://54.159.60.186:8000/health
 
 That public port 8000 check should fail or not connect. The public supported
 path remains `https://api.foodchecker.zkelder.dev/health`.
+
+## Monitoring Verification
+
+Monitoring is deployed by `docker-compose.prod.yml` and bound to localhost on
+the EC2 host. Do not expose Grafana, Prometheus, or node_exporter publicly.
+
+Run these on the EC2 host:
+
+```bash
+docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+curl http://127.0.0.1:8000/metrics
+curl http://127.0.0.1:9090/-/healthy
+curl http://127.0.0.1:3000/api/health
+```
+
+Open Grafana through an SSH tunnel:
+
+```bash
+ssh -i ~/.ssh/food-checker-aws -L 3000:127.0.0.1:3000 ubuntu@54.159.60.186
+```
+
+Then open `http://localhost:3000`.
+
+Common troubleshooting commands:
+
+```bash
+docker logs food-checker-prometheus --tail 80
+docker logs food-checker-grafana --tail 80
+docker logs food-checker-node-exporter --tail 80
+docker system df
+df -h
+```
+
+See [Monitoring](monitoring.md) for the full private dashboard workflow.
 
 ## Disk Cleanup
 

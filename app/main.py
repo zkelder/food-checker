@@ -11,7 +11,8 @@ from contextvars import ContextVar
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from sqlalchemy.orm import Session
 
 from app.analyzer import analyze_ingredients
@@ -40,6 +41,16 @@ request_id_context: ContextVar[str | None] = ContextVar(
     "request_id",
     default=None,
 )
+HTTP_REQUESTS_TOTAL = Counter(
+    "food_checker_http_requests_total",
+    "Total HTTP requests handled by the Food Checker API.",
+    ("method", "path", "status_code"),
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "food_checker_http_request_duration_seconds",
+    "HTTP request duration in seconds for the Food Checker API.",
+    ("method", "path", "status_code"),
+)
 
 Base.metadata.create_all(bind=engine)
 
@@ -65,6 +76,17 @@ def get_request_id() -> str | None:
     return request_id_context.get()
 
 
+def get_metrics_path(request: Request) -> str:
+    """
+    Return a low-cardinality path label for Prometheus metrics.
+    """
+    route = request.scope.get("route")
+    route_path = getattr(route, "path", None)
+    if isinstance(route_path, str):
+        return route_path
+    return "unmatched"
+
+
 @app.middleware("http")
 async def request_observability_middleware(request: Request, call_next):
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
@@ -87,7 +109,8 @@ async def request_observability_middleware(request: Request, call_next):
             content={"detail": "Internal server error."},
         )
     finally:
-        duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+        duration_seconds = time.perf_counter() - start_time
+        duration_ms = round(duration_seconds * 1000, 2)
         logger.info(
             "request method=%s path=%s status_code=%s duration_ms=%.2f request_id=%s",
             request.method,
@@ -95,6 +118,12 @@ async def request_observability_middleware(request: Request, call_next):
             status_code,
             duration_ms,
             request_id,
+        )
+        metrics_path = get_metrics_path(request)
+        metric_labels = (request.method, metrics_path, str(status_code))
+        HTTP_REQUESTS_TOTAL.labels(*metric_labels).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(*metric_labels).observe(
+            duration_seconds,
         )
         request_id_context.reset(token)
 
@@ -133,6 +162,27 @@ def health_check() -> dict:
     Simple health check endpoint.
     """
     return {"status": "ok"}
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics() -> Response:
+    """
+    Return Prometheus metrics for private scraping.
+    """
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+@app.get("/status")
+def status() -> dict:
+    """
+    Return public-safe service status metadata.
+    """
+    return {
+        "status": "ok",
+        "service": "food-checker-api",
+        "version": APP_VERSION,
+        "environment": APP_ENVIRONMENT,
+    }
 
 
 @app.get("/version")

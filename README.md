@@ -61,6 +61,8 @@ pages are hosted under `zkelder.dev`.
 - ECR stores backend API images tagged by commit SHA and `latest`.
 - SSM is the no-SSH deployment channel from GitHub Actions to EC2.
 - Docker Compose runs the single-host backend container on EC2.
+- Private Prometheus/Grafana monitoring runs through Docker Compose and is
+  accessed by SSH tunnel only.
 
 ## Backend Local Development
 
@@ -102,6 +104,8 @@ npm start
 
 - `GET /health` returns a basic API health status.
 - `GET /version` returns public service metadata.
+- `GET /status` returns public-safe service status metadata.
+- `GET /metrics` exposes Prometheus metrics for private scraping.
 - Every API response includes an `X-Request-ID` header.
 - Clients may send `X-Request-ID` to correlate client reports with backend logs.
 - Backend logging should avoid request bodies, full ingredient text, images, auth tokens, and secrets.
@@ -109,6 +113,7 @@ npm start
 ## Documentation
 
 - [CI/CD](docs/ci-cd.md)
+- [Monitoring](docs/monitoring.md)
 - [Roadmap](docs/roadmap.md)
 - [Production runbook](docs/production-runbook.md)
 - [Mobile release pipeline](docs/mobile-release-pipeline.md)

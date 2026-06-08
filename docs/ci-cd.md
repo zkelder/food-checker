@@ -107,6 +107,21 @@ Post-deploy cleanup runs only after validation succeeds:
 
 The workflow does not prune Docker volumes.
 
+## Private Monitoring
+
+`docker-compose.prod.yml` also runs private Prometheus, Grafana, and
+node_exporter services. They bind only to `127.0.0.1` on the EC2 host:
+
+- FastAPI metrics: `http://127.0.0.1:8000/metrics`
+- Grafana: `http://127.0.0.1:3000`
+- Prometheus: `http://127.0.0.1:9090`
+- node_exporter: `http://127.0.0.1:9100`
+
+Prometheus scrapes the API internally through Docker Compose service DNS and
+Grafana is accessed through an SSH tunnel. Do not add public Caddy routes or
+Terraform ingress for monitoring. Deploy cleanup does not prune Docker volumes,
+so Grafana dashboard data is preserved.
+
 ## Host Configuration
 
 Ansible host configuration lives under `ansible/`. It prepares the EC2 backend
@@ -167,5 +182,6 @@ image deployment path is GitHub Actions -> OIDC -> SSM -> EC2 -> ECR image pull
 
 - [Roadmap](roadmap.md)
 - [Production runbook](production-runbook.md)
+- [Monitoring](monitoring.md)
 - [Mobile release pipeline](mobile-release-pipeline.md)
 - [TestFlight checklist](testflight-checklist.md)
