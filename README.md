@@ -113,6 +113,7 @@ npm start
 ## Documentation
 
 - [CI/CD](docs/ci-cd.md)
+- [ECS migration plan](docs/ecs-migration-plan.md)
 - [Monitoring](docs/monitoring.md)
 - [Roadmap](docs/roadmap.md)
 - [Production runbook](docs/production-runbook.md)
