@@ -104,6 +104,9 @@ Monitoring is deployed by `docker-compose.prod.yml` and bound to localhost on
 the EC2 host. Do not expose Grafana, Prometheus, or node_exporter publicly.
 Prometheus local retention is 48 hours to keep disk usage small on the current
 temporary EC2 host while preserving enough recent data for troubleshooting.
+The `Production Synthetic Check` GitHub Actions workflow runs every 30 minutes
+and verifies the public API path from outside the EC2 host with `/health`,
+`/status`, and a small `/analyze` request.
 
 Run these on the EC2 host:
 

@@ -1,0 +1,98 @@
+name: Production Synthetic Check
+
+"on":
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check production API
+        run: |
+          python3 - <<'PY'
+          import json
+          import sys
+          import urllib.error
+          import urllib.request
+
+          API_BASE_URL = "https://api.foodchecker.zkelder.dev"
+          ANALYZE_PAYLOAD = {
+              "text": "milk, wheat flour, soybean oil, red 40, sugar",
+              "selected_rules": ["milk"],
+          }
+
+
+          def request_json(method, path, payload=None):
+              body = None
+              headers = {"Accept": "application/json"}
+              if payload is not None:
+                  body = json.dumps(payload).encode("utf-8")
+                  headers["Content-Type"] = "application/json"
+
+              request = urllib.request.Request(
+                  f"{API_BASE_URL}{path}",
+                  data=body,
+                  headers=headers,
+                  method=method,
+              )
+
+              try:
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      response_body = response.read().decode("utf-8")
+                      return response.status, json.loads(response_body or "{}")
+              except urllib.error.HTTPError as error:
+                  print(f"{method} {path} failed with HTTP {error.code}", file=sys.stderr)
+                  raise
+              except urllib.error.URLError as error:
+                  print(f"{method} {path} failed: {error.reason}", file=sys.stderr)
+                  raise
+
+
+          def require(condition, message):
+              if not condition:
+                  raise AssertionError(message)
+
+
+          checks = [
+              ("health", "GET", "/health", None),
+              ("status", "GET", "/status", None),
+              ("analyze", "POST", "/analyze", ANALYZE_PAYLOAD),
+          ]
+
+          results = {}
+          for name, method, path, payload in checks:
+              status_code, body = request_json(method, path, payload)
+              require(status_code == 200, f"{name} returned HTTP {status_code}")
+              results[name] = body
+              print(f"{name} check returned HTTP 200")
+
+          require(results["health"].get("status") == "ok", "health status is not ok")
+          print("health check passed")
+
+          status_body = results["status"]
+          require(status_body.get("status") == "ok", "status endpoint is not ok")
+          require(
+              status_body.get("service") == "food-checker-api",
+              "status service is not food-checker-api",
+          )
+          require(
+              status_body.get("environment") == "production",
+              "status environment is not production",
+          )
+          print("status check passed")
+
+          match_count = results["analyze"].get("match_count")
+          require(
+              isinstance(match_count, int) and match_count >= 1,
+              f"analyze match_count is invalid: {match_count!r}",
+          )
+          print(f"analyze check passed with match_count={match_count}")
+
+          print("production synthetic checks passed")
+          PY

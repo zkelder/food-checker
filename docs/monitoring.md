@@ -19,6 +19,11 @@ Prometheus keeps 48 hours of local metrics. This is intentionally lightweight
 for the current small EC2 host and temporary single-host setup, while preserving
 enough recent data for troubleshooting and dashboard screenshots.
 
+GitHub Actions also runs a scheduled production synthetic check every 30
+minutes. That workflow calls the public API over HTTPS and verifies `/health`,
+`/status`, and a small `/analyze` request. It complements Prometheus/Grafana by
+testing the public path from outside the EC2 host.
+
 ## Access
 
 Open a private Grafana tunnel:
