@@ -68,6 +68,10 @@ role, sends an SSM Run Command to the backend EC2 instance, logs in to ECR,
 pulls the selected ECR image with `docker-compose.prod.yml`, starts the
 container, and verifies the deployment.
 
+The production Compose file binds FastAPI to `127.0.0.1:8000` on the EC2 host.
+Public API traffic should reach the backend through Caddy over HTTPS at
+`https://api.foodchecker.zkelder.dev`, not by connecting to port 8000 directly.
+
 The `image_tag` input defaults to `latest`. Use a commit SHA tag to deploy a
 specific image produced by the Backend Image workflow.
 
@@ -100,6 +104,11 @@ Post-deploy cleanup runs only after validation succeeds:
 - `/tmp/aws` removal.
 
 The workflow does not prune Docker volumes.
+
+Terraform still documents an API ingress path for TCP 8000 from the earlier MVP
+setup. After confirming Caddy/HTTPS works with localhost-only Docker binding,
+tighten the security group so public traffic is limited to ports 80 and 443
+plus trusted SSH access.
 
 ## Host Configuration
 

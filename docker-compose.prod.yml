@@ -3,7 +3,7 @@ services:
     image: 627225873907.dkr.ecr.us-east-1.amazonaws.com/food-checker-api:${IMAGE_TAG:-latest}
     container_name: food-checker-api
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file:
       - .env
     restart: unless-stopped

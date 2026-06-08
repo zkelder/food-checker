@@ -5,6 +5,9 @@
 - API: https://api.foodchecker.zkelder.dev
 - Components: FastAPI backend, Expo mobile app, Supabase, and public legal/support pages under `zkelder.dev`.
 - Mobile builds are handled manually through EAS/TestFlight for now.
+- Production public API traffic should go through Caddy/HTTPS. The FastAPI
+  container binds port 8000 to `127.0.0.1` on the EC2 host for Caddy and local
+  health checks only.
 
 ## Public Endpoint Verification
 
@@ -73,6 +76,7 @@ After a deploy, verify:
 ```bash
 curl https://api.foodchecker.zkelder.dev/health
 curl -X POST https://api.foodchecker.zkelder.dev/analyze -H "Content-Type: application/json" -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rules":["milk"]}'
+curl http://127.0.0.1:8000/health
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 docker inspect food-checker-api --format '{{.Config.Image}}'
 df -h
@@ -80,6 +84,20 @@ docker system df
 ```
 
 The synthetic `/analyze` response should include `match_count >= 1`.
+
+From outside the EC2 host, direct Docker access to FastAPI should not be served:
+
+```bash
+curl http://54.159.60.186:8000/health
+```
+
+After security group hardening, that public port 8000 check should fail or not
+connect. The public supported path remains
+`https://api.foodchecker.zkelder.dev/health`.
+
+Terraform still contains the older TCP 8000 ingress rule for the backend
+security group. Tighten that rule after confirming Caddy/HTTPS works with the
+localhost-only Docker binding.
 
 ## Disk Cleanup
 
