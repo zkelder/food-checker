@@ -18,40 +18,73 @@ jobs:
           python3 - <<'PY'
           import json
           import sys
+          import time
           import urllib.error
           import urllib.request
 
           API_BASE_URL = "https://api.foodchecker.zkelder.dev"
+          USER_AGENT = "FoodCheckerSyntheticCheck/1.0 (+https://foodchecker.zkelder.dev)"
+          RETRYABLE_HTTP_STATUS = {403, 429, 500, 502, 503, 504}
+          DIAGNOSTIC_HEADERS = ("server", "cf-ray", "content-type", "date")
           ANALYZE_PAYLOAD = {
               "text": "milk, wheat flour, soybean oil, red 40, sugar",
               "selected_rules": ["milk"],
           }
 
 
+          def print_http_error(method, path, error):
+              print(f"{method} {path} failed with HTTP {error.code}", file=sys.stderr)
+              headers = {
+                  key.lower(): value
+                  for key, value in error.headers.items()
+                  if key.lower() in DIAGNOSTIC_HEADERS
+              }
+              if headers:
+                  print(f"response headers: {headers}", file=sys.stderr)
+
+              body_preview = error.read(300).decode("utf-8", errors="replace").strip()
+              if body_preview:
+                  print(f"response body preview: {body_preview}", file=sys.stderr)
+
+
           def request_json(method, path, payload=None):
               body = None
-              headers = {"Accept": "application/json"}
+              headers = {
+                  "Accept": "application/json",
+                  "User-Agent": USER_AGENT,
+              }
               if payload is not None:
                   body = json.dumps(payload).encode("utf-8")
                   headers["Content-Type"] = "application/json"
 
-              request = urllib.request.Request(
-                  f"{API_BASE_URL}{path}",
-                  data=body,
-                  headers=headers,
-                  method=method,
-              )
+              for attempt in (1, 2):
+                  request = urllib.request.Request(
+                      f"{API_BASE_URL}{path}",
+                      data=body,
+                      headers=headers,
+                      method=method,
+                  )
 
-              try:
-                  with urllib.request.urlopen(request, timeout=20) as response:
-                      response_body = response.read().decode("utf-8")
-                      return response.status, json.loads(response_body or "{}")
-              except urllib.error.HTTPError as error:
-                  print(f"{method} {path} failed with HTTP {error.code}", file=sys.stderr)
-                  raise
-              except urllib.error.URLError as error:
-                  print(f"{method} {path} failed: {error.reason}", file=sys.stderr)
-                  raise
+                  try:
+                      with urllib.request.urlopen(request, timeout=20) as response:
+                          response_body = response.read().decode("utf-8")
+                          return response.status, json.loads(response_body or "{}")
+                  except urllib.error.HTTPError as error:
+                      print_http_error(method, path, error)
+                      if attempt == 1 and error.code in RETRYABLE_HTTP_STATUS:
+                          print("retrying once after 5 seconds", file=sys.stderr)
+                          time.sleep(5)
+                          continue
+                      raise
+                  except urllib.error.URLError as error:
+                      print(f"{method} {path} failed: {error.reason}", file=sys.stderr)
+                      if attempt == 1:
+                          print("retrying once after 5 seconds", file=sys.stderr)
+                          time.sleep(5)
+                          continue
+                      raise
+
+              raise RuntimeError(f"{method} {path} failed after retry")
 
 
           def require(condition, message):

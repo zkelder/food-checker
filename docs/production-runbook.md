@@ -169,6 +169,10 @@ docker inspect food-checker-api --format '{{.Config.Image}}'
 
 - API unreachable: verify DNS, HTTPS termination, host reachability, and backend process status.
 - Failed health check: check process logs, environment variables, and database connectivity.
+- Scheduled synthetic check gets 403 while local `curl` succeeds: check
+  Cloudflare, WAF, bot protection, or User-Agent blocking. The workflow sends
+  `FoodCheckerSyntheticCheck/1.0 (+https://foodchecker.zkelder.dev)` as its
+  User-Agent.
 - Database or Supabase issue: verify `DATABASE_URL`, `SUPABASE_URL`, credentials, network access, and token validation errors.
 - CORS issue: confirm `CORS_ORIGINS` includes the calling web origin.
 - OCR timeout: ask for a clearer, closer image and check backend OCR logs by `request_id`.

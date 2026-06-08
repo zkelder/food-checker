@@ -105,6 +105,10 @@ live Grafana or Prometheus URLs.
 
 - Prometheus target down: open Prometheus through the SSH tunnel, check
   `Status -> Targets`, then verify the target from the EC2 host with `curl`.
+- Scheduled synthetic check returns 403 while local `curl` succeeds: check
+  Cloudflare, WAF, bot protection, or User-Agent blocking rules. The workflow
+  sends `FoodCheckerSyntheticCheck/1.0 (+https://foodchecker.zkelder.dev)` as
+  its User-Agent for identification.
 - Grafana datasource missing: check the provisioning file under
   `monitoring/grafana/provisioning/datasources/` and restart the Grafana
   container.
