@@ -27,6 +27,190 @@
         "type": "prometheus",
         "uid": "prometheus"
       },
+      "description": "Current API scrape status from Prometheus.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "up{job=\"food-checker-api\"}",
+          "legendFormat": "API up",
+          "refId": "A"
+        }
+      ],
+      "title": "API Up",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Number of expected monitoring targets currently up.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "green",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "targets": [
+        {
+          "expr": "sum(up{job=~\"prometheus|food-checker-api|node_exporter\"})",
+          "legendFormat": "targets up of 3",
+          "refId": "A"
+        }
+      ],
+      "title": "Targets Up",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Root filesystem usage from node_exporter.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "percentage",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "targets": [
+        {
+          "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node_exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{job=\"node_exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"}))",
+          "legendFormat": "root disk",
+          "refId": "A"
+        }
+      ],
+      "title": "Root Disk Usage",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -40,7 +224,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 0
+        "y": 4
       },
       "id": 1,
       "options": {
@@ -62,7 +246,8 @@
         }
       ],
       "title": "API Request Rate",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Total FastAPI request throughput over the last five minutes."
     },
     {
       "datasource": {
@@ -82,7 +267,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 0
+        "y": 4
       },
       "id": 2,
       "options": {
@@ -104,7 +289,8 @@
         }
       ],
       "title": "HTTP Status Rate",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Request rate grouped by HTTP status code; useful for spotting 4xx/5xx changes."
     },
     {
       "datasource": {
@@ -124,7 +310,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 0
+        "y": 4
       },
       "id": 3,
       "options": {
@@ -151,7 +337,8 @@
         }
       ],
       "title": "Request Latency",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "p50 and p95 request latency from the FastAPI histogram metrics."
     },
     {
       "datasource": {
@@ -171,7 +358,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 8
+        "y": 12
       },
       "id": 4,
       "options": {
@@ -193,7 +380,8 @@
         }
       ],
       "title": "Analyze Activity",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Traffic to the ingredient text analysis endpoint."
     },
     {
       "datasource": {
@@ -213,7 +401,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 8
+        "y": 12
       },
       "id": 5,
       "options": {
@@ -235,7 +423,8 @@
         }
       ],
       "title": "Image Scan Activity",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Traffic to the OCR image scan endpoint."
     },
     {
       "datasource": {
@@ -255,7 +444,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 8
+        "y": 12
       },
       "id": 6,
       "options": {
@@ -277,7 +466,8 @@
         }
       ],
       "title": "Host CPU Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "CPU utilization reported by node_exporter."
     },
     {
       "datasource": {
@@ -297,7 +487,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "id": 7,
       "options": {
@@ -319,7 +509,8 @@
         }
       ],
       "title": "Host Memory Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Memory utilization reported by node_exporter."
     },
     {
       "datasource": {
@@ -339,7 +530,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 16
+        "y": 20
       },
       "id": 8,
       "options": {
@@ -355,13 +546,14 @@
       },
       "targets": [
         {
-          "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node_exporter\",fstype!~\"tmpfs|overlay\"} / node_filesystem_size_bytes{job=\"node_exporter\",fstype!~\"tmpfs|overlay\"}))",
-          "legendFormat": "{{mountpoint}}",
+          "expr": "100 * (1 - (node_filesystem_avail_bytes{job=\"node_exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{job=\"node_exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"}))",
+          "legendFormat": "root disk",
           "refId": "A"
         }
       ],
       "title": "Host Disk Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Root filesystem usage only; noisy bind mounts and boot partitions are excluded."
     },
     {
       "datasource": {
@@ -370,9 +562,26 @@
       },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
           },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "text": "Down"
+                },
+                "1": {
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -393,32 +602,33 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 16
+        "y": 20
       },
       "id": 9,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
           "fields": "",
-          "values": false
+          "reducer": [
+            "sum"
+          ],
+          "show": false
         },
-        "textMode": "auto"
+        "showHeader": true
       },
       "targets": [
         {
-          "expr": "sum(up{job=~\"prometheus|food-checker-api|node_exporter\"})",
-          "legendFormat": "targets up",
-          "refId": "A"
+          "expr": "up{job=~\"prometheus|food-checker-api|node_exporter\"}",
+          "legendFormat": "{{job}}",
+          "refId": "A",
+          "format": "table",
+          "instant": true
         }
       ],
       "title": "Prometheus Target Health",
-      "type": "stat"
+      "type": "table",
+      "description": "Individual scrape target status from Prometheus up metrics."
     }
   ],
   "refresh": "30s",
