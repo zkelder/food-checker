@@ -26,10 +26,12 @@ testing the public path from outside the EC2 host.
 
 ## Access
 
+`<backend-host>` below is the backend instance's public address (`terraform -chdir=infra output` or the EC2 console). It is deliberately not written into this repository.
+
 Open a private Grafana tunnel:
 
 ```bash
-ssh -i ~/.ssh/food-checker-aws -L 3000:127.0.0.1:3000 ubuntu@54.159.60.186
+ssh -i ~/.ssh/food-checker-aws -L 3000:127.0.0.1:3000 ubuntu@<backend-host>
 ```
 
 Then open:
@@ -41,7 +43,7 @@ http://localhost:3000
 Open a private Prometheus tunnel when needed:
 
 ```bash
-ssh -i ~/.ssh/food-checker-aws -L 9090:127.0.0.1:9090 ubuntu@54.159.60.186
+ssh -i ~/.ssh/food-checker-aws -L 9090:127.0.0.1:9090 ubuntu@<backend-host>
 ```
 
 Then open:
@@ -74,9 +76,9 @@ curl https://api.foodchecker.zkelder.dev/status
 Monitoring ports should not respond publicly:
 
 ```bash
-curl http://54.159.60.186:3000
-curl http://54.159.60.186:9090
-curl http://54.159.60.186:9100
+curl http://<backend-host>:3000
+curl http://<backend-host>:9090
+curl http://<backend-host>:9100
 ```
 
 Those public checks should fail or not connect.

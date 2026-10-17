@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EC2_HOST="54.159.60.186"
+EC2_HOST="${EC2_HOST:?set EC2_HOST to the backend host (public DNS name or address)}"
 EC2_USER="ubuntu"
 SSH_KEY="$HOME/.ssh/food-checker-aws"
 APP_DIR="/home/ubuntu/food-checker"

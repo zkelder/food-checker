@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EC2_HOST="54.159.60.186"
+EC2_HOST="${EC2_HOST:?set EC2_HOST to the backend host (public DNS name or address)}"
 EC2_USER="ubuntu"
 SSH_KEY="$HOME/.ssh/food-checker-aws"
 APP_DIR="/home/ubuntu/food-checker"
 AWS_REGION="${AWS_REGION:-us-east-1}"
-ECR_REPOSITORY_URL="627225873907.dkr.ecr.us-east-1.amazonaws.com/food-checker-api"
+ECR_REPOSITORY_URL="${ECR_REPOSITORY_URL:?set ECR_REPOSITORY_URL to the backend image repository (the ECR_REPOSITORY_URL repository variable)}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
 echo "Deploying Food Checker backend image ${ECR_REPOSITORY_URL}:${IMAGE_TAG} to ${EC2_HOST}..."
