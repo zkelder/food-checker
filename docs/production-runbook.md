@@ -91,8 +91,10 @@ The synthetic `/analyze` response should include `match_count >= 1`.
 
 From outside the EC2 host, direct Docker access to FastAPI should not be served:
 
+`<backend-host>` below is the backend instance's public address (`terraform -chdir=infra output` or the EC2 console). It is deliberately not written into this repository.
+
 ```bash
-curl http://54.159.60.186:8000/health
+curl http://<backend-host>:8000/health
 ```
 
 That public port 8000 check should fail or not connect. The public supported
@@ -120,7 +122,7 @@ curl http://127.0.0.1:3000/api/health
 Open Grafana through an SSH tunnel:
 
 ```bash
-ssh -i ~/.ssh/food-checker-aws -L 3000:127.0.0.1:3000 ubuntu@54.159.60.186
+ssh -i ~/.ssh/food-checker-aws -L 3000:127.0.0.1:3000 ubuntu@<backend-host>
 ```
 
 Then open `http://localhost:3000`.
