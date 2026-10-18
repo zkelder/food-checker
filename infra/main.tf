@@ -270,6 +270,29 @@ resource "aws_key_pair" "backend" {
   }
 }
 
+# Cloudflare's published edge IPv4 ranges. The origin has no IPv6 address, so
+# only the IPv4 list is needed. Refresh from https://www.cloudflare.com/ips-v4
+# when Cloudflare announces a change; the list is deliberately static here so a
+# provider outage cannot alter the security group.
+resource "aws_ec2_managed_prefix_list" "cloudflare_ipv4" {
+  name           = "${var.project_name}-cloudflare-ipv4"
+  address_family = "IPv4"
+  max_entries    = 20
+
+  dynamic "entry" {
+    for_each = toset(var.cloudflare_ipv4_cidrs)
+    content {
+      cidr        = entry.value
+      description = "Cloudflare edge"
+    }
+  }
+
+  tags = {
+    Name    = "${var.project_name}-cloudflare-ipv4"
+    Project = var.project_name
+  }
+}
+
 resource "aws_security_group" "backend" {
   name        = "${var.project_name}-backend-sg"
   description = "Security group for the Food Checker backend EC2 instance."
@@ -284,19 +307,19 @@ resource "aws_security_group" "backend" {
   }
 
   ingress {
-    description = "HTTP web traffic"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP from Cloudflare edge only"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    prefix_list_ids = [aws_ec2_managed_prefix_list.cloudflare_ipv4.id]
   }
 
   ingress {
-    description = "HTTPS web traffic"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTPS from Cloudflare edge only"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    prefix_list_ids = [aws_ec2_managed_prefix_list.cloudflare_ipv4.id]
   }
 
   egress {
