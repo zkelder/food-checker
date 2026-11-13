@@ -11,18 +11,19 @@ product label.
 
 ## Current Status
 
-- MVP / beta-stage portfolio project.
-- FastAPI backend is deployed at `https://api.foodchecker.zkelder.dev`.
-- Expo / React Native mobile app is configured for EAS and TestFlight-style
-  manual release flows.
-- Current production backend runs on EC2 with Docker Compose, Caddy/HTTPS, ECR
-  images, GitHub Actions OIDC, and SSM-based no-SSH deploys.
-- ECS/Fargate and RDS-style platform changes are future planning items, not the
-  current production architecture.
+- MVP / beta-stage portfolio project, preserved as an engineering case study.
+- **The AWS backend is intentionally shut down and the API is not currently available.** Do not interpret a failed request to the former endpoint as evidence of a running service.
+- The former deployment used EC2, Docker Compose, Caddy/HTTPS, ECR images,
+  GitHub Actions OIDC, and SSM-based no-SSH deploys.
+- Expo / React Native mobile release flows, architecture, screenshots, code,
+  and operational documentation are preserved for review.
+- ECS/Fargate and RDS-style platform changes were plans, not the implemented deployment.
 
-## Live Links
+## Portfolio Links
 
-- API: `https://api.foodchecker.zkelder.dev`
+- Case study: `https://zkelder.dev/foodchecker/`
+- Public source: `https://github.com/zkelder/food-checker`
+- Former API: `https://api.foodchecker.zkelder.dev` (intentionally offline)
 - Privacy: `https://zkelder.dev/foodchecker/privacy.html`
 - Support: `https://zkelder.dev/foodchecker/support.html`
 - Terms: `https://zkelder.dev/foodchecker/terms.html`
@@ -55,7 +56,7 @@ GitHub Actions
   -> Caddy HTTPS reverse proxy
 ```
 
-The production API is served through Caddy at
+When deployed, the API was served through Caddy at
 `https://api.foodchecker.zkelder.dev`. The FastAPI container is bound to
 `127.0.0.1:8000` on the EC2 host, so raw port 8000 is not intended to be public.
 Private Prometheus and Grafana monitoring run on the same host and are accessed
@@ -99,8 +100,9 @@ through SSH tunnels only.
   Compose restart on EC2.
 - Legacy SSH/source deploy paths are retained only as fallbacks.
 - Terraform owns AWS infrastructure; Ansible owns EC2 host prerequisites.
-- Scheduled production synthetic checks verify `/health`, `/status`, and a
-  small `/analyze` request.
+- A scheduled production synthetic check was designed to verify `/health`, `/status`, and a
+  small `/analyze` request while the backend was deployed. It does not establish live
+  service availability today.
 
 ## Local Development
 
@@ -143,7 +145,8 @@ python -c "from app.main import app; print(app.title)"
 cd mobile && npx expo config --type public && npm run typecheck && npm run lint
 ```
 
-Production smoke checks:
+Historical deployment smoke checks (run only after an intentional, reviewed
+redeployment; these do not work while AWS is shut down):
 
 ```bash
 curl https://api.foodchecker.zkelder.dev/health
@@ -153,6 +156,15 @@ curl -X POST https://api.foodchecker.zkelder.dev/analyze \
   -H "Content-Type: application/json" \
   -d '{"text":"milk, wheat flour, soybean oil, red 40, sugar","selected_rules":["milk"]}'
 ```
+
+## Restart boundary
+
+No restart is currently planned. Before making this a live service again:
+review auth behavior for requests without a bearer token, inspect the last
+recorded `/analyze` HTTP 500 failure, validate cloud-origin access controls,
+confirm the AWS resource and data-retention plan, and run an authenticated
+end-to-end smoke test. Restoring hosting without those checks is not a
+release-readiness decision.
 
 ## Deployment And Release Notes
 
